@@ -1,61 +1,61 @@
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-body{
-    font-family:Arial, Helvetica, sans-serif;
-    background:#fff8f0;
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #fff8f0;
 }
 
-header{
-    background:#ff9800;
-    color:white;
-    padding:20px;
-    text-align:center;
+header {
+    background: #ff9800;
+    color: white;
+    padding: 20px;
+    text-align: center;
 }
 
-nav{
-    margin-top:15px;
+nav {
+    margin-top: 15px;
 }
 
-nav a{
-    color:white;
-    text-decoration:none;
-    margin:15px;
-    font-weight:bold;
+nav a {
+    color: white;
+    text-decoration: none;
+    margin: 15px;
+    font-weight: bold;
 }
 
-section{
-    padding:50px;
+section {
+    padding: 50px;
 }
 
-#inicio{
-    text-align:center;
+#inicio {
+    text-align: center;
 }
 
-button{
-    background:#ff9800;
-    color:white;
-    border:none;
-    padding:12px 30px;
-    border-radius:8px;
-    cursor:pointer;
-    margin-top:20px;
+button {
+    background: #ff9800;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 20px;
 }
 
-.producto{
-    background:white;
-    margin:20px 0;
-    padding:20px;
-    border-radius:10px;
-    box-shadow:0 0 10px rgba(0,0,0,.1);
+.producto {
+    background: white;
+    margin: 20px 0;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
 }
 
-footer{
-    background:#222;
-    color:white;
-    text-align:center;
-    padding:20px;
+footer {
+    background: #222;
+    color: white;
+    text-align: center;
+    padding: 20px;
 }
