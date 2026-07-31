@@ -1,6 +1,160 @@
 /* CSS variables */
-:root{
---color-primary: #ff9f1c;
---color-secondary: #f7d166;
---color-accent: #ef476f;
+:root {
+    --color-primary: #ff9f1c;
+    --color-secondary: #f7d166;
+    --color-accent: #ef476f;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #fff8f0;
+}
+
+header {
+    background: var(--color-primary);
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+nav {
+    margin-top: 15px;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    margin: 15px;
+    font-weight: bold;
+}
+
+nav a:hover {
+    color: var(--color-accent);
+}
+
+section {
+    padding: 50px;
+}
+
+#inicio {
+    text-align: center;
+}
+
+#inicio h2 {
+    color: var(--color-primary);
+    margin-bottom: 20px;
+    font-size: 2.2em;
+}
+
+#inicio p {
+    font-size: 1.1em;
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+h2 {
+    color: var(--color-primary);
+    margin-bottom: 20px;
+    font-size: 2em;
+}
+
+p {
+    line-height: 1.6;
+    color: #333;
+}
+
+button {
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 20px;
+    font-size: 1em;
+    font-weight: bold;
+    transition: background 0.3s ease;
+}
+
+button:hover {
+    background: var(--color-accent);
+}
+
+.productos-container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.producto {
+    background: white;
+    margin: 20px 0;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    flex: 1;
+    min-width: 260px;
+    max-width: 360px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.producto:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.producto h3 {
+    color: var(--color-accent);
+    margin-bottom: 10px;
+    font-size: 1.4em;
+}
+
+.producto h4 {
+    color: var(--color-primary);
+    margin-top: 15px;
+    font-size: 1.3em;
+}
+
+#contacto p {
+    font-size: 1.1em;
+    margin: 10px 0;
+}
+
+footer {
+    background: #222;
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+footer p {
+    color: white;
+}
+
+@media (max-width: 600px) {
+    section {
+        padding: 30px 20px;
+    }
+
+    nav a {
+        display: inline-block;
+        margin: 8px;
+    }
+
+    h1 {
+        font-size: 1.6em;
+    }
+
+    #inicio h2,
+    h2 {
+        font-size: 1.6em;
+    }
 }
