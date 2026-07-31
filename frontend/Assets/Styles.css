@@ -5,6 +5,11 @@
     --color-accent: #ef476f;
 }
 
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 20px;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -137,6 +142,25 @@ footer {
 
 footer p {
     color: white;
+}
+
+@keyframes highlightSection {
+    0% {
+        background: rgba(255, 159, 28, 0.25);
+    }
+
+    60% {
+        background: rgba(255, 159, 28, 0.10);
+    }
+
+    100% {
+        background: transparent;
+    }
+}
+
+section:target {
+    animation: highlightSection 1.8s ease-out;
+    border-radius: 10px;
 }
 
 @media (max-width: 600px) {
