@@ -1,0 +1,20 @@
+{
+  "name": "michemango-backend",
+  "version": "1.0.0",
+  "description": "Servidor backend de MicheMango",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "node",
+    "express",
+    "michemango"
+  ],
+  "author": "Rafael Lombana",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
