@@ -10,7 +10,7 @@
 
 </head>
 
-<body> 
+<body>
 
     <header>
 
@@ -27,16 +27,22 @@
 
     <section id="inicio">
 
+        <span class="hero-badge">Sabor tropical en cada sorbo</span>
         <h2>¡Bienvenidos a MicheMango!</h2>
 
         <p>
             Disfruta el auténtico sabor del mango en una deliciosa miche preparada
-            con ingredientes frescos y de excelente calidad.
+            con ingredientes frescos, combinaciones irresistibles y ese toque
+            colombiano que convierte cada momento en una celebración.
         </p>
 
-        <a href="#productos" style="text-decoration: none;">
-            <button>Ver productos</button>
-        </a>
+        <a class="button-link" href="#productos">Ver productos</a>
+
+        <div class="beneficios" aria-label="Lo que nos diferencia">
+            <span>🥭 Mango fresco</span>
+            <span>✨ Preparación artesanal</span>
+            <span>💛 Hecho con amor</span>
+        </div>
 
     </section>
 
@@ -44,10 +50,26 @@
 
         <h2>¿Quiénes somos?</h2>
 
-        <p>
-            MicheMango nace con el propósito de ofrecer bebidas refrescantes
-            elaboradas con mango, brindando una experiencia única a nuestros clientes.
-        </p>
+        <div class="nosotros-grid">
+            <div>
+                <p>
+                    Somos un emprendimiento barranquillero apasionado por transformar
+                    el mango en momentos de alegría. En MicheMango combinamos fruta
+                    fresca, ingredientes de calidad y preparaciones hechas al momento
+                    para que cada vaso tenga un sabor único.
+                </p>
+                <p>
+                    Nos encanta crear mezclas dulces, ácidas y picantes que se
+                    adapten a todos los gustos. Ya sea para compartir con amigos,
+                    celebrar una ocasión especial o simplemente darte un gusto,
+                    aquí siempre encontrarás una miche preparada con cariño.
+                </p>
+            </div>
+            <div class="nosotros-destacado">
+                <strong>¡Más que una bebida!</strong>
+                <span>Una experiencia tropical, fresca y muy nuestra.</span>
+            </div>
+        </div>
 
     </section>
 
@@ -57,25 +79,57 @@
 
         <div class="productos-container">
 
-            <div class="producto">
+            <article class="producto">
 
                 <h3>Micheman</h3>
 
-                <p>Mango fresco, limón y chamoy.</p>
+                <p>Mango fresco, limón y chamoy. La combinación perfecta para empezar
+                    con un sabor intenso, refrescante y lleno de actitud.</p>
 
                 <h4>$15.000</h4>
+                <label for="cantidad-micheman">Cantidad</label>
+                <input id="cantidad-micheman" class="cantidad" type="number" min="1" value="1">
+                <button class="pedido-button" type="button" data-producto="Micheman" data-precio="15000"
+                    data-cantidad="cantidad-micheman">Pedir por WhatsApp</button>
 
-            </div>
+            </article>
 
-            <div class="producto">
+            <article class="producto">
 
                 <h3>Miche Premium</h3>
 
-                <p>Con gomitas, tajín y frutas.</p>
+                <p>Con gomitas, tajín y frutas para quienes quieren una experiencia
+                    más completa, divertida y cargada de sabor.</p>
 
                 <h4>$18.000</h4>
+                <label for="cantidad-premium">Cantidad</label>
+                <input id="cantidad-premium" class="cantidad" type="number" min="1" value="1">
+                <button class="pedido-button" type="button" data-producto="Miche Premium" data-precio="18000"
+                    data-cantidad="cantidad-premium">Pedir por WhatsApp</button>
 
-            </div>
+            </article>
+
+            <article class="producto">
+                <h3>Mango Explosivo</h3>
+                <p>Mango, maracuyá, chamoy y tajín para una mezcla tropical con un
+                    toque ácido y picante inolvidable.</p>
+                <h4>$20.000</h4>
+                <label for="cantidad-explosivo">Cantidad</label>
+                <input id="cantidad-explosivo" class="cantidad" type="number" min="1" value="1">
+                <button class="pedido-button" type="button" data-producto="Mango Explosivo" data-precio="20000"
+                    data-cantidad="cantidad-explosivo">Pedir por WhatsApp</button>
+            </article>
+
+            <article class="producto">
+                <h3>Mini Miche</h3>
+                <p>La opción ideal para un antojo rápido: mango, limón y chamoy en
+                    una porción pequeña, pero llena de sabor.</p>
+                <h4>$10.000</h4>
+                <label for="cantidad-mini">Cantidad</label>
+                <input id="cantidad-mini" class="cantidad" type="number" min="1" value="1">
+                <button class="pedido-button" type="button" data-producto="Mini Miche" data-precio="10000"
+                    data-cantidad="cantidad-mini">Pedir por WhatsApp</button>
+            </article>
 
         </div>
 
@@ -88,6 +142,9 @@
         <p>📱 WhatsApp: 3105776753 </p>
 
         <p>📍 Barranquilla - Colombia</p>
+        <p class="contacto-extra">¿Listo para probar tu próxima miche favorita?
+            Escríbenos y prepara tu pedido.</p>
+        <a class="button-link button-link--small" href="https://wa.me/573105776753">Pedir por WhatsApp</a>
 
     </section>
 
@@ -97,6 +154,6 @@
 
     </footer>
 
-
-
+    <script src="script.js"></script>
+</body>
 </html>
