@@ -1,0 +1,23 @@
+{
+  "name": "michemango",
+  "version": "1.0.0",
+  "description": "MicheMango es una página web creada para promocionar y vender miche de mango. Su objetivo es ofrecer a los clientes una forma sencilla de conocer los productos, los precios y la información del emprendimiento.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lombanarafael/Michemango.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lombanarafael/Michemango/issues"
+  },
+  "homepage": "https://github.com/lombanarafael/Michemango#readme",
+  "dependencies": {
+    "express": "^5.3.0"
+  }
+}
