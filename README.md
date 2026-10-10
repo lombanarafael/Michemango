@@ -122,6 +122,8 @@ Una key incorrecta, sin acceso al modelo o sin crédito disponible produce un
 mensaje para volver a intentar; revisa la key, el modelo configurado y el estado
 de tu cuenta. El modelo configurado se puede comparar con la
 [lista oficial de modelos de Claude](https://platform.claude.com/docs/en/models/overview).
+Si aparece que la key está incompleta, confirma que hayas pegado la API key real
+completa de Anthropic en `.env`; una contraseña o un código numérico no es una API key.
 
 ### Límite del almacenamiento JSON
 
