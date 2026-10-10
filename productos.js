@@ -21,6 +21,13 @@ const productos = [
     descripcion:
       "Mango, maracuyá, chamoy y tajín en una mezcla tropical, ácida y picante.",
   },
+  {
+    id: 4,
+    nombre: "Mini Miche",
+    precio: 10000,
+    descripcion:
+      "Porción pequeña de mango, limón y chamoy para un antojo lleno de sabor.",
+  },
 ];
 
 // Permitimos que server.js importe y use este arreglo.

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingresar | MicheMango</title>
+    <link rel="stylesheet" href="/Styles.css">
+</head>
+<body class="admin-body">
+    <main class="admin-login">
+        <a class="admin-back-link" href="/">← Volver a MicheMango</a>
+        <section class="admin-card" aria-labelledby="login-titulo">
+            <span class="hero-badge">Administración</span>
+            <h1 id="login-titulo">Ingresar al panel</h1>
+            <p>Inicia sesión para revisar las solicitudes de MicheMango.</p>
+
+            <form id="form-admin-login" class="form-contacto">
+                <label for="admin-usuario">Usuario</label>
+                <input id="admin-usuario" name="usuario" type="text" autocomplete="username" required>
+
+                <label for="admin-contrasena">Contraseña</label>
+                <input id="admin-contrasena" name="contrasena" type="password"
+                    autocomplete="current-password" required>
+
+                <button class="contacto-button" type="submit">Iniciar sesión</button>
+                <p id="admin-login-estado" class="contacto-estado" role="status" aria-live="polite"></p>
+            </form>
+        </section>
+    </main>
+    <script src="/admin-login.js"></script>
+</body>
+</html>

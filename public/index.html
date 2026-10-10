@@ -146,6 +146,30 @@
             Escríbenos y prepara tu pedido.</p>
         <a class="button-link button-link--small" href="https://wa.me/573105776753">Pedir por WhatsApp</a>
 
+        <form id="form-contacto" class="form-contacto">
+            <h3>Envíanos un mensaje</h3>
+
+            <label for="contacto-nombre">Nombre</label>
+            <input id="contacto-nombre" name="nombre" type="text" maxlength="80" required>
+
+            <label for="contacto-telefono">Teléfono o WhatsApp</label>
+            <input id="contacto-telefono" name="telefono" type="tel" maxlength="25" required>
+
+            <label for="contacto-tipo">¿En qué te podemos ayudar?</label>
+            <select id="contacto-tipo" name="tipo" required>
+                <option value="">Selecciona una opción</option>
+                <option value="pedido">Pedido</option>
+                <option value="cotizacion_evento">Cotización para evento</option>
+                <option value="duda">Duda</option>
+            </select>
+
+            <label for="contacto-mensaje">Mensaje</label>
+            <textarea id="contacto-mensaje" name="mensaje" rows="5" maxlength="1000" required></textarea>
+
+            <button class="contacto-button" type="submit">Enviar mensaje</button>
+            <p id="contacto-estado" class="contacto-estado" role="status" aria-live="polite"></p>
+        </form>
+
     </section>
 
     <footer>
@@ -154,6 +178,39 @@
 
     </footer>
 
+    <!-- Botón flotante para abrir el recomendador de productos. -->
+    <button id="chatbot-abrir" class="chatbot-open" type="button"
+        aria-controls="chatbot-panel" aria-expanded="false">
+        Recomendarme una miche 🥭
+    </button>
+
+    <!-- Panel accesible del chat; su contenido se actualiza con JavaScript. -->
+    <section id="chatbot-panel" class="chatbot-panel" role="dialog"
+        aria-labelledby="chatbot-titulo" aria-modal="false" hidden>
+        <header class="chatbot-header">
+            <div>
+                <h2 id="chatbot-titulo">Asesor MicheMango</h2>
+                <p>Cuéntame qué sabores te gustan</p>
+            </div>
+            <button id="chatbot-cerrar" class="chatbot-close" type="button"
+                aria-label="Cerrar chat">×</button>
+        </header>
+
+        <div id="chatbot-mensajes" class="chatbot-messages" role="log" aria-live="polite">
+            <p class="chatbot-message chatbot-message--bot">
+                ¡Hola! ¿Te gusta más lo dulce, lo ácido o lo picante? También cuéntame tu presupuesto y te recomiendo una miche.
+            </p>
+        </div>
+
+        <form id="chatbot-form" class="chatbot-form">
+            <label class="visually-hidden" for="chatbot-texto">Tu mensaje</label>
+            <textarea id="chatbot-texto" name="mensaje" rows="2" maxlength="500"
+                placeholder="Ej.: Me gusta lo picante y tengo $18.000" required></textarea>
+            <button class="chatbot-send" type="submit">Enviar</button>
+        </form>
+    </section>
+
     <script src="script.js"></script>
+    <script src="chatbot.js"></script>
 </body>
 </html>

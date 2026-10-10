@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitudes | MicheMango</title>
+    <link rel="stylesheet" href="/Styles.css">
+</head>
+<body class="admin-body">
+    <main class="admin-panel">
+        <header class="admin-header">
+            <div>
+                <span class="hero-badge">MicheMango</span>
+                <h1>Solicitudes recibidas</h1>
+                <p>Revisa cada mensaje y actualiza su estado.</p>
+            </div>
+            <button id="admin-cerrar-sesion" class="admin-secondary-button" type="button">
+                Cerrar sesión
+            </button>
+        </header>
+
+        <p id="admin-estado" class="admin-message" role="status" aria-live="polite"></p>
+
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Fecha</th>
+                        <th scope="col">Nombre y teléfono</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Mensaje</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-solicitudes"></tbody>
+            </table>
+        </div>
+        <a class="admin-back-link" href="/">Volver al sitio</a>
+    </main>
+    <script src="/admin.js"></script>
+</body>
+</html>
