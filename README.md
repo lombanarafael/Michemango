@@ -1,153 +1,137 @@
-# 🥭 MicheMango
+# MicheMango
 
-## Descripción
+Aplicación web para presentar el emprendimiento MicheMango, consultar el catálogo, preparar pedidos para WhatsApp y registrar solicitudes de contacto. El frontend es estático y el backend Express gestiona los datos y protege el panel administrativo.
 
-MicheMango es una página web creada para promocionar y vender miche de mango. Su objetivo es ofrecer a los clientes una forma sencilla de conocer los productos, los precios y la información del emprendimiento.
+## Estructura
 
-## Objetivos
-
-- Dar a conocer la marca MicheMango.
-- Mostrar el catálogo de productos.
-- Facilitar el contacto con los clientes.
-- Impulsar las ventas del emprendimiento.
-
-## Tecnologías utilizadas
-
-- HTML5
-- CSS3
-- JavaScript
-- Node.js
-- Express
-- express-session
-- bcryptjs
-- dotenv
-- @anthropic-ai/sdk
-- Git
-- GitHub
-
-## Estructura del proyecto
 ```text
-Michemango/
-├── data/
-│   ├── solicitudes.js
-│   └── solicitudes.json (se crea al recibir la primera solicitud)
-├── middleware/
-│   └── requiereAdmin.js
+Michemango-main/
 ├── public/
 │   ├── index.html
-│   ├── Styles.css
-│   ├── script.js
-│   ├── admin.js
-│   ├── admin-login.js
-│   ├── chatbot.js
-│   └── _redirects
-├── routes/
-│   ├── contacto.js
-│   ├── admin.js
-│   ├── adminApi.js
-│   └── chat.js
-├── prompts/
-│   └── chatbotSistema.js
-├── views/
-│   ├── admin-login.html
-│   └── admin.html
-├── productos.js
-├── server.js
+│   ├── admin/
+│   │   ├── login.html
+│   │   └── panel.html
+│   ├── css/styles.css
+│   └── js/
+│       ├── config.js
+│       ├── menu.js
+│       ├── animaciones.js
+│       ├── catalogo.js
+│       ├── contacto.js
+│       ├── chatbot.js
+│       └── admin/
+│           ├── login.js
+│           └── panel.js
+├── src/
+│   ├── server.js
+│   ├── productos.js
+│   ├── routes/
+│   ├── middleware/
+│   ├── data/
+│   ├── prompts/       (no se usa; no hay funciones de IA)
+│   └── views/         (no se usa; las páginas estáticas están en public/admin)
+├── .github/workflows/pages.yml
+├── index.html
+├── netlify.toml     (configuración previa de publicación estática, opcional)
 ├── package.json
-├── .env.example
-└── README.md
+├── README.md
+└── .env.example
 ```
 
-## Servidor de desarrollo y formulario de contacto
+`public/js/chatbot.js` conserva el nombre solicitado, pero **no es un chatbot**: contiene un recomendador determinista que puntúa los productos del catálogo según el sabor elegido y filtra por presupuesto. No conversa, no usa servicios de IA y no envía datos a una API de IA.
 
-Express sirve los archivos de la carpeta `public`, conserva el catálogo en
-`/api/productos` y recibe los mensajes del formulario en `POST /api/contacto`.
-La ruta valida los datos en el servidor y guarda cada solicitud en
-`data/solicitudes.json`; este archivo se crea al enviar el primer formulario y
-está excluido de Git porque contiene datos personales.
+Se conserva `netlify.toml` y `public/_redirects` como soporte opcional del despliegue estático previo en Netlify; la publicación principal documentada en este proyecto es GitHub Pages.
 
-Para iniciar el servidor desde la carpeta raíz del proyecto:
+## Requisitos
 
-```bash
+- Node.js 18 o superior.
+- npm.
+
+## Ejecución local
+
+Desde la carpeta del proyecto, en PowerShell:
+
+```powershell
+Copy-Item .env.example .env
 npm install
+```
+
+Configura en `.env` un hash bcrypt para el administrador y una clave de sesión aleatoria de al menos 32 caracteres. Para generar el hash:
+
+```powershell
+node -e "require('bcryptjs').hash('ELIGE_UNA_CONTRASENA_SEGURA', 12).then(console.log)"
+```
+
+Pega el resultado en `ADMIN_PASSWORD_HASH`. Genera `SESSION_SECRET` con un valor aleatorio largo. No guardes la contraseña en `.env` ni publiques el archivo `.env`.
+
+Inicia el backend:
+
+```powershell
 npm start
 ```
 
-Si usas Windows PowerShell y aparece un error indicando que no se puede ejecutar
-`npm.ps1`, usa `npm.cmd` en lugar de `npm` (por ejemplo, `npm.cmd start`).
+Abre `http://localhost:3000/`. Express sirve `public/` y la API desde el mismo origen. Para probar con Live Server, abre el `index.html` de la raíz o `public/index.html`; `config.js` usa el backend local en `http://localhost:3000`.
 
-Después de iniciarlo, visita `http://localhost:3000/` para ver el sitio o
-`http://localhost:3000/api/productos` para consultar el catálogo.
+## Configuración editable del negocio
 
-### Acceso al panel de administración
+- `public/js/config.js`: configura `apiBasePublicada` con la URL pública del backend una vez desplegado. El número `573000000000` es un **ejemplo**; reemplázalo por el número de WhatsApp real antes de publicar. El sitio avisa que el teléfono todavía es de ejemplo.
+- `src/data/productos.json`: catálogo inicial de demostración; los nombres, descripciones y precios actuales son editables y no deben anunciarse como precios oficiales sin confirmación del negocio.
+- `.env.example`: plantilla de variables del backend, sin credenciales reales.
 
-Copia `.env.example` como `.env` y configura un usuario, el hash bcrypt de la
-contraseña y un secreto de sesión aleatorio de al menos 32 caracteres. Para
-crear el hash de una contraseña desde la terminal puedes ejecutar:
+## Catálogo y pedidos
 
-```bash
-node -e "require('bcryptjs').hash('TU_CONTRASENA', 12).then(console.log)"
-```
+`GET /api/productos` entrega el catálogo almacenado en `src/data/productos.json`. El panel permite crear, editar y eliminar productos; esa misma API alimenta el catálogo público y el recomendador. Los filtros, subtotales y total del resumen se calculan en el navegador con los precios que entrega el backend.
 
-Pega el resultado en `ADMIN_PASSWORD_HASH` dentro de `.env`. No compartas ese
-archivo ni lo subas a Git; `.gitignore` ya lo excluye. El panel está en
-`http://localhost:3000/admin/login`. La tabla permite cambiar el estado entre
-`nueva` y `atendida`, y eliminar solicitudes.
+El botón de WhatsApp abre un borrador que incluye productos, cantidades y total estimado. MicheMango no registra la compra ni confirma el pedido cuando se abre WhatsApp. Como el pedido no se almacena en el backend, no se recibe un precio desde el navegador para registrar una venta; si luego se añade registro de pedidos, el backend debe volver a calcular el importe usando los precios del catálogo.
 
-Una **sesión** es un registro temporal en el servidor que recuerda que ya
-iniciaste sesión; el navegador conserva solo una cookie identificadora. La
-contraseña se guarda como hash porque el hash permite comprobarla sin almacenar
-el texto secreto original.
+## Formulario y datos
 
-El almacenamiento de sesiones predeterminado de Express sirve para aprender y
-probar localmente, pero se borra al reiniciar el servidor y no está diseñado para
-un despliegue real con varias instancias.
+`POST /api/contacto` valida en el servidor nombre, correo, teléfono opcional, tipo de solicitud y mensaje; luego guarda la solicitud en `src/data/solicitudes.json`. La respuesta incluye un identificador para comprobar que se registró. El archivo con datos personales está ignorado por Git.
 
-### Chatbot recomendador
+Los archivos JSON son un almacenamiento didáctico para desarrollo o una demostración pequeña, no una base de datos multiusuario. En producción hay que usar almacenamiento persistente (por ejemplo PostgreSQL administrado) o un volumen persistente del proveedor; en muchos servicios Node los archivos locales desaparecen al reiniciarse o redesplegar. `express-session` usa el almacén en memoria por defecto, de modo que las sesiones se cierran al reiniciar el proceso. Para producción con varias instancias se requiere un almacén de sesión persistente.
 
-El botón flotante abre un chat que recomienda entre los cuatro productos según
-los gustos y el presupuesto. El navegador envía el historial reciente a
-`POST /api/chat`; Express valida que cada mensaje tenga como máximo 500
-caracteres y consulta a Anthropic usando las instrucciones de
-`prompts/chatbotSistema.js`. La API key y el modelo se configuran en `.env` como
-`ANTHROPIC_API_KEY` y `ANTHROPIC_MODEL`. El ejemplo usa `claude-haiku-5-5`; puedes
-cambiarlo por otro ID habilitado en tu cuenta.
+## Panel administrativo
 
-Agrega tu API key de Anthropic a `.env` para activar recomendaciones reales. Si
-la key falta, el servidor sigue funcionando, pero la ruta del chat responde con
-un error 503 amigable. Nunca pongas la key en `public/chatbot.js` ni en el HTML:
-el navegador y sus solicitudes son visibles para los visitantes.
+1. Abre `public/admin/login.html` (en local: `http://localhost:3000/admin/login.html`).
+2. El servidor compara el usuario y el hash bcrypt configurados en `.env`.
+3. El navegador conserva una cookie `HttpOnly`; el backend revisa la sesión en cada ruta administrativa.
+4. `GET/POST/PATCH/DELETE /api/admin/productos` y `GET/PATCH/DELETE /api/admin/solicitudes` devuelven `401` si no hay una sesión autorizada.
 
-Una key incorrecta, sin acceso al modelo o sin crédito disponible produce un
-mensaje para volver a intentar; revisa la key, el modelo configurado y el estado
-de tu cuenta. El modelo configurado se puede comparar con la
-[lista oficial de modelos de Claude](https://platform.claude.com/docs/en/models/overview).
-Si aparece que la key está incompleta, confirma que hayas pegado la API key real
-completa de Anthropic en `.env`; una contraseña o un código numérico no es una API key.
+La vista puede descargarse como archivo estático, pero eso no da permisos: las operaciones de datos se bloquean en el backend. No incluyas contraseñas, hashes privados ni secretos en `public/`.
 
-### Límite del almacenamiento JSON
+## API y CORS
 
-El archivo JSON sirve para aprender y para un uso local pequeño, pero no está
-diseñado para varias instancias del servidor o muchas escrituras simultáneas.
-Además, si el equipo se apaga o el archivo se daña, se pueden perder solicitudes.
-Más adelante conviene usar una base de datos y un servicio de backend desplegado.
+En desarrollo, `config.js` apunta a `http://localhost:3000`. Tras desplegar el backend, establece `apiBasePublicada` en `public/js/config.js`, por ejemplo `https://TU-SERVICIO.example.com` (sin `/` final).
 
-La configuración actual de Netlify publica los archivos estáticos. Para que el
-formulario funcione después de publicar el sitio también habrá que desplegar el
-servidor Express en un servicio que ejecute Node.js y conectar ambas direcciones.
+Configura `CORS_ORIGINS` en las variables del servicio backend con el origen exacto del frontend, por ejemplo `https://TU_USUARIO.github.io`; no incluyas comodines ni una ruta como `/Michemango`. El valor debe coincidir con el origen del sitio que muestra el navegador. El servidor habilita credenciales para permitir la cookie de sesión entre orígenes. En producción la cookie es `Secure` y `SameSite=None`; algunos navegadores pueden bloquear cookies de terceros cuando GitHub Pages y el backend usan dominios distintos. Comprueba el login en los navegadores objetivo y, si ese límite causa problemas, aloja el frontend bajo el mismo dominio o adopta un mecanismo de autenticación adecuado a la plataforma.
 
-## Funcionalidades
+## Publicación
 
-- Página de inicio.
-- Catálogo de productos.
-- Información del emprendimiento.
-- Contacto.
-- Diseño adaptable para dispositivos móviles.
+### Frontend en GitHub Pages
 
-## Autor
+El workflow `.github/workflows/pages.yml` publica exclusivamente la carpeta `public/` cada vez que hay un push a `main`.
 
-Rafael Lombana
+1. Sube el repositorio a GitHub y conserva la rama `main`.
+2. En **Settings → Pages**, selecciona **GitHub Actions** como fuente.
+3. Sustituye `apiBasePublicada` en `public/js/config.js` por la URL HTTPS del backend desplegado y sube ese cambio.
+4. Revisa la ejecución de **Publicar frontend en GitHub Pages** en la pestaña **Actions**. El enlace solo debe compartirse cuando el flujo termine correctamente y el sitio responda.
 
-## Estado del proyecto
+### Backend Node.js
 
-🚧 En desarrollo.
+Despliega el repositorio en un servicio que ejecute Node.js y configura el comando `npm start`. Define como variables de entorno `NODE_ENV=production`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET` (aleatorio, al menos 32 caracteres) y `CORS_ORIGINS` (origen exacto de Pages). No agregues estas variables al repositorio. Configura almacenamiento persistente para los JSON o migra a una base de datos administrada antes de depender de los datos reales.
+
+El hosting de GitHub Pages **no ejecuta Express**. Publicar el frontend no publica automáticamente la API. Verifica ambas partes por separado: `GET <BACKEND>/api/productos`, un envío de prueba a `POST <BACKEND>/api/contacto`, y acceso a `https://TU_USUARIO.github.io/...`. No afirmes que se publicó ni que una solicitud quedó persistida hasta comprobarlo en el servicio.
+
+## Pruebas manuales sugeridas
+
+1. Confirma que el catálogo carga y que cada filtro cambia los productos visibles.
+2. Cambia cantidades y verifica subtotal y total; agrega, quita y revisa productos en el resumen.
+3. Pulsa preparar pedido: debe abrir WhatsApp con el borrador y mostrar que el número es solo un ejemplo. No es una compra confirmada.
+4. Prueba el recomendador con varias preferencias y presupuestos; sus resultados deben pertenecer al catálogo vigente.
+5. Envía el formulario con datos válidos e inválidos; comprueba el identificador de respuesta y la entrada registrada en el panel.
+6. Intenta consultar `/api/admin/productos` sin sesión y confirma `401`; inicia sesión y prueba crear, editar y eliminar un producto.
+7. En el despliegue, confirma que una dirección de origen no incluida en `CORS_ORIGINS` no pueda usar la API.
+
+## Inteligencia artificial
+
+Este alcance no incluye IA real. Si la guía exige específicamente inteligencia artificial, habrá que añadir una integración distinta, por ejemplo un servicio de modelo generativo llamado exclusivamente desde el backend (con clave privada en variables de entorno), o un modelo clasificador/recomendador desplegado en el servidor. Eso requiere definir proveedor, permisos, costos y protección de datos; no debe presentarse el recomendador actual como IA.

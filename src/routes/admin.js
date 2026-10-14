@@ -1,26 +1,23 @@
 // Estas rutas muestran el acceso y las páginas privadas del panel de administración.
 const express = require("express");
-const path = require("path");
 const bcrypt = require("bcryptjs");
 const { requiereAdmin } = require("../middleware/requiereAdmin");
 
 const router = express.Router();
-const ARCHIVO_LOGIN = path.join(__dirname, "..", "views", "admin-login.html");
-const ARCHIVO_PANEL = path.join(__dirname, "..", "views", "admin.html");
 const OPCIONES_COOKIE = {
   httpOnly: true,
-  sameSite: "lax",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   secure: process.env.NODE_ENV === "production",
   maxAge: 60 * 60 * 1000,
 };
 
-// Si ya hay una sesión activa, no hace falta volver a mostrar el formulario de acceso.
+// Las páginas son estáticas para GitHub Pages; la sesión sigue validándose en el servidor.
 router.get("/login", (req, res) => {
   if (req.session && req.session.admin === true) {
-    return res.redirect("/admin");
+    return res.redirect("/admin/panel.html");
   }
 
-  return res.sendFile(ARCHIVO_LOGIN);
+  return res.redirect("/admin/login.html");
 });
 
 // Comparamos usuario y contraseña con los datos configurados en el archivo .env.
@@ -68,7 +65,7 @@ router.post("/login", async (req, res) => {
 
 // Protegemos la página principal del panel; sin sesión se redirige a la pantalla de acceso.
 router.get("/", requiereAdmin, (req, res) => {
-  res.sendFile(ARCHIVO_PANEL);
+  res.redirect("/admin/panel.html");
 });
 
 // Cerramos la sesión y borramos la cookie del navegador.

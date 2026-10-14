@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MicheMango</title>
 
-    <link rel="stylesheet" href="Styles.css">
+    <link rel="stylesheet" href="css/styles.css">
 
 </head>
 
@@ -20,6 +20,8 @@
             <a href="#inicio">Inicio</a>
             <a href="#nosotros">Nosotros</a>
             <a href="#productos">Productos</a>
+            <a href="#pedido">Pedido</a>
+            <a href="#recomendador">Recomendador</a>
             <a href="#contacto">Contacto</a>
         </nav>
 
@@ -76,75 +78,58 @@
     <section id="productos">
 
         <h2>Nuestros Productos</h2>
+        <p class="catalogo-nota">Los precios que aparecen son ejemplos de demostración; confirma los valores oficiales antes de aceptar pedidos.</p>
+        <div id="filtros-productos" class="filtros-productos" aria-label="Filtros del catálogo"></div>
+        <div id="catalogo-productos" class="productos-container" aria-live="polite"></div>
 
-        <div class="productos-container">
+    </section>
 
-            <article class="producto">
-
-                <h3>Micheman</h3>
-
-                <p>Mango fresco, limón y chamoy. La combinación perfecta para empezar
-                    con un sabor intenso, refrescante y lleno de actitud.</p>
-
-                <h4>$15.000</h4>
-                <label for="cantidad-micheman">Cantidad</label>
-                <input id="cantidad-micheman" class="cantidad" type="number" min="1" value="1">
-                <button class="pedido-button" type="button" data-producto="Micheman" data-precio="15000"
-                    data-cantidad="cantidad-micheman">Pedir por WhatsApp</button>
-
-            </article>
-
-            <article class="producto">
-
-                <h3>Miche Premium</h3>
-
-                <p>Con gomitas, tajín y frutas para quienes quieren una experiencia
-                    más completa, divertida y cargada de sabor.</p>
-
-                <h4>$18.000</h4>
-                <label for="cantidad-premium">Cantidad</label>
-                <input id="cantidad-premium" class="cantidad" type="number" min="1" value="1">
-                <button class="pedido-button" type="button" data-producto="Miche Premium" data-precio="18000"
-                    data-cantidad="cantidad-premium">Pedir por WhatsApp</button>
-
-            </article>
-
-            <article class="producto">
-                <h3>Mango Explosivo</h3>
-                <p>Mango, maracuyá, chamoy y tajín para una mezcla tropical con un
-                    toque ácido y picante inolvidable.</p>
-                <h4>$20.000</h4>
-                <label for="cantidad-explosivo">Cantidad</label>
-                <input id="cantidad-explosivo" class="cantidad" type="number" min="1" value="1">
-                <button class="pedido-button" type="button" data-producto="Mango Explosivo" data-precio="20000"
-                    data-cantidad="cantidad-explosivo">Pedir por WhatsApp</button>
-            </article>
-
-            <article class="producto">
-                <h3>Mini Miche</h3>
-                <p>La opción ideal para un antojo rápido: mango, limón y chamoy en
-                    una porción pequeña, pero llena de sabor.</p>
-                <h4>$10.000</h4>
-                <label for="cantidad-mini">Cantidad</label>
-                <input id="cantidad-mini" class="cantidad" type="number" min="1" value="1">
-                <button class="pedido-button" type="button" data-producto="Mini Miche" data-precio="10000"
-                    data-cantidad="cantidad-mini">Pedir por WhatsApp</button>
-            </article>
-
+    <section id="pedido" class="pedido-section">
+        <h2>Tu pedido</h2>
+        <p>Revisa los productos seleccionados y el total estimado antes de abrir WhatsApp.</p>
+        <div id="pedido-resumen" class="pedido-resumen" aria-live="polite">
+            <p>Aún no has agregado productos.</p>
         </div>
+        <div class="pedido-total">
+            <strong>Total estimado</strong>
+            <strong id="pedido-total">$0</strong>
+        </div>
+        <button id="pedido-whatsapp" class="pedido-button" type="button" disabled>
+            Preparar pedido en WhatsApp
+        </button>
+        <p id="pedido-estado" class="contacto-estado" role="status" aria-live="polite"></p>
+    </section>
 
+    <section id="recomendador" class="recomendador-section">
+        <span class="hero-badge">Recomendador por preferencias</span>
+        <h2>Encuentra tu MicheMango ideal</h2>
+        <p>Elige un sabor y tu presupuesto para ver productos del catálogo que pueden gustarte. Es una herramienta de reglas, no una inteligencia artificial.</p>
+        <form id="form-recomendador" class="recomendador-form">
+            <label for="preferencia-sabor">¿Qué sabor prefieres?</label>
+            <select id="preferencia-sabor" name="sabor">
+                <option value="cualquiera">Cualquiera</option>
+                <option value="dulce">Dulce</option>
+                <option value="acido">Ácido</option>
+                <option value="picante">Picante</option>
+                <option value="refrescante">Refrescante</option>
+            </select>
+            <label for="presupuesto-maximo">Presupuesto máximo (COP)</label>
+            <input id="presupuesto-maximo" name="presupuesto" type="number" min="0" step="1000" placeholder="Ej.: 18000">
+            <button class="contacto-button" type="submit">Ver recomendaciones</button>
+        </form>
+        <div id="recomendaciones" class="recomendaciones" aria-live="polite"></div>
     </section>
 
     <section id="contacto">
 
         <h2>Contáctanos</h2>
 
-        <p>📱 WhatsApp: 3105776753 </p>
+        <p>📱 WhatsApp: número de ejemplo pendiente de confirmar</p>
 
         <p>📍 Barranquilla - Colombia</p>
         <p class="contacto-extra">¿Listo para probar tu próxima miche favorita?
             Escríbenos y prepara tu pedido.</p>
-        <a class="button-link button-link--small" href="https://wa.me/573105776753">Pedir por WhatsApp</a>
+        <a class="button-link button-link--small" href="#pedido">Preparar pedido</a>
 
         <form id="form-contacto" class="form-contacto">
             <h3>Envíanos un mensaje</h3>
@@ -152,8 +137,11 @@
             <label for="contacto-nombre">Nombre</label>
             <input id="contacto-nombre" name="nombre" type="text" maxlength="80" required>
 
-            <label for="contacto-telefono">Teléfono o WhatsApp</label>
-            <input id="contacto-telefono" name="telefono" type="tel" maxlength="25" required>
+            <label for="contacto-correo">Correo electrónico</label>
+            <input id="contacto-correo" name="correo" type="email" maxlength="120" required>
+
+            <label for="contacto-telefono">Teléfono o WhatsApp (opcional)</label>
+            <input id="contacto-telefono" name="telefono" type="tel" maxlength="25">
 
             <label for="contacto-tipo">¿En qué te podemos ayudar?</label>
             <select id="contacto-tipo" name="tipo" required>
@@ -175,42 +163,15 @@
     <footer>
 
         <p>© 2026 MicheMango - Todos los derechos reservados.</p>
+        <a class="admin-back-link" href="admin/login.html">Acceso administrativo</a>
 
     </footer>
 
-    <!-- Botón flotante para abrir el recomendador de productos. -->
-    <button id="chatbot-abrir" class="chatbot-open" type="button"
-        aria-controls="chatbot-panel" aria-expanded="false">
-        Recomendarme una miche 🥭
-    </button>
-
-    <!-- Panel accesible del chat; su contenido se actualiza con JavaScript. -->
-    <section id="chatbot-panel" class="chatbot-panel" role="dialog"
-        aria-labelledby="chatbot-titulo" aria-modal="false" hidden>
-        <header class="chatbot-header">
-            <div>
-                <h2 id="chatbot-titulo">Asesor MicheMango</h2>
-                <p>Cuéntame qué sabores te gustan</p>
-            </div>
-            <button id="chatbot-cerrar" class="chatbot-close" type="button"
-                aria-label="Cerrar chat">×</button>
-        </header>
-
-        <div id="chatbot-mensajes" class="chatbot-messages" role="log" aria-live="polite">
-            <p class="chatbot-message chatbot-message--bot">
-                ¡Hola! ¿Te gusta más lo dulce, lo ácido o lo picante? También cuéntame tu presupuesto y te recomiendo una miche.
-            </p>
-        </div>
-
-        <form id="chatbot-form" class="chatbot-form">
-            <label class="visually-hidden" for="chatbot-texto">Tu mensaje</label>
-            <textarea id="chatbot-texto" name="mensaje" rows="2" maxlength="500"
-                placeholder="Ej.: Me gusta lo picante y tengo $18.000" required></textarea>
-            <button class="chatbot-send" type="submit">Enviar</button>
-        </form>
-    </section>
-
-    <script src="script.js"></script>
-    <script src="chatbot.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/animaciones.js"></script>
+    <script src="js/catalogo.js"></script>
+    <script src="js/contacto.js"></script>
+    <script src="js/chatbot.js"></script>
 </body>
 </html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitudes | MicheMango</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body class="admin-body">
+    <main class="admin-panel">
+        <header class="admin-header">
+            <div>
+                <span class="hero-badge">MicheMango</span>
+                <h1>Panel administrativo</h1>
+                <p>Gestiona tus productos y revisa cada solicitud.</p>
+            </div>
+            <button id="admin-cerrar-sesion" class="admin-secondary-button" type="button">
+                Cerrar sesión
+            </button>
+        </header>
+
+        <p id="admin-estado" class="admin-message" role="status" aria-live="polite"></p>
+
+        <section class="admin-section">
+            <h2>Catálogo de productos</h2>
+            <form id="form-producto" class="admin-product-form">
+                <input type="hidden" id="producto-id" name="id">
+                <div class="admin-product-grid">
+                    <label>
+                        Nombre
+                        <input id="producto-nombre" name="nombre" type="text" maxlength="80" required>
+                    </label>
+                    <label>
+                        Categoría
+                        <input id="producto-categoria" name="categoria" type="text" maxlength="40" required>
+                    </label>
+                    <label>
+                        Precio (COP)
+                        <input id="producto-precio" name="precio" type="number" min="1" step="1000" required>
+                    </label>
+                    <label>
+                        Ícono o emoji
+                        <input id="producto-imagen" name="imagen" type="text" maxlength="10" value="🥭">
+                    </label>
+                </div>
+                <label>
+                    Descripción
+                    <textarea id="producto-descripcion" name="descripcion" rows="3" maxlength="220" required></textarea>
+                </label>
+                <div class="admin-product-actions">
+                    <button class="contacto-button" type="submit">Guardar producto</button>
+                    <button id="producto-cancelar" class="admin-secondary-button" type="button">Cancelar</button>
+                </div>
+            </form>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Ícono</th>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Categoría</th>
+                            <th scope="col">Precio</th>
+                            <th scope="col">Descripción</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-productos"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="admin-section">
+            <h2>Solicitudes recibidas</h2>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Correo</th>
+                            <th scope="col">Teléfono</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Mensaje</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-solicitudes"></tbody>
+                </table>
+            </div>
+        </section>
+        <a class="admin-back-link" href="../index.html">Volver al sitio</a>
+    </main>
+    <script src="../js/config.js"></script>
+    <script src="../js/admin/panel.js"></script>
+</body>
+</html>

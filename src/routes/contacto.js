@@ -6,11 +6,16 @@ const { guardarSolicitud } = require("../data/solicitudes");
 const router = express.Router();
 const TIPOS_PERMITIDOS = ["pedido", "cotizacion_evento", "duda"];
 const MAXIMO_NOMBRE = 80;
+const MAXIMO_CORREO = 120;
 const MAXIMO_TELEFONO = 25;
 const MAXIMO_MENSAJE = 1000;
 
 // Aceptamos teléfonos en formatos comunes y comprobamos su cantidad de dígitos.
 function esTelefonoValido(telefono) {
+  if (telefono === "") {
+    return true;
+  }
+
   if (typeof telefono !== "string" || telefono.length > MAXIMO_TELEFONO) {
     return false;
   }
@@ -28,14 +33,31 @@ router.post("/contacto", (req, res) => {
   }
 
   const nombre = typeof cuerpo.nombre === "string" ? cuerpo.nombre.trim() : "";
+  const correo = typeof cuerpo.correo === "string" ? cuerpo.correo.trim().toLowerCase() : "";
   const telefono = typeof cuerpo.telefono === "string" ? cuerpo.telefono.trim() : "";
   const mensaje = typeof cuerpo.mensaje === "string" ? cuerpo.mensaje.trim() : "";
   const tipo = typeof cuerpo.tipo === "string" ? cuerpo.tipo : "";
+
+  if (
+    cuerpo.telefono !== undefined &&
+    cuerpo.telefono !== null &&
+    typeof cuerpo.telefono !== "string"
+  ) {
+    return res.status(400).json({ error: "El teléfono debe ser texto o quedar vacío." });
+  }
 
   if (!nombre || nombre.length > MAXIMO_NOMBRE) {
     return res.status(400).json({
       error: `Escribe tu nombre (máximo ${MAXIMO_NOMBRE} caracteres).`,
     });
+  }
+
+  if (
+    !correo ||
+    correo.length > MAXIMO_CORREO ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)
+  ) {
+    return res.status(400).json({ error: "Escribe un correo electrónico válido." });
   }
 
   if (!esTelefonoValido(telefono)) {
@@ -59,7 +81,8 @@ router.post("/contacto", (req, res) => {
     id: randomUUID(),
     fecha: new Date().toISOString(),
     nombre,
-    telefono,
+    correo,
+    telefono: telefono || null,
     tipo,
     mensaje,
     estado: "nueva",

@@ -2,9 +2,9 @@
   "name": "michemango",
   "version": "1.0.0",
   "description": "MicheMango es una página web creada para promocionar y vender miche de mango. Su objetivo es ofrecer a los clientes una forma sencilla de conocer los productos, los precios y la información del emprendimiento.",
-  "main": "server.js",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node src/server.js"
   },
   "repository": {
     "type": "git",
@@ -18,7 +18,6 @@
   },
   "homepage": "https://github.com/lombanarafael/Michemango#readme",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.133.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^18.0.7",
     "express": "^5.3.0",
