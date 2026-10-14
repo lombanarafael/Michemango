@@ -60,8 +60,8 @@ Configúralas en `.env` local o en la configuración de variables secretas del p
 | `DATABASE_URL` | Cadena privada de PostgreSQL; obligatoria en producción. |
 | `DATABASE_SSL` | `true` solo cuando lo requiera el proveedor. TLS valida certificados. |
 | `FRONTEND_ORIGIN` | Origen exacto del frontend. Puede contener una lista separada por comas. |
-| `CORS_ORIGINS` | Alias de compatibilidad; se usa si no se definió `FRONTEND_ORIGIN`. |
-| `SESSION_SAME_SITE` | `lax`, `strict` o `none`; producción usa `none` de forma predeterminada. |
+| `CORS_ORIGINS` | Lista adicional de orígenes exactos permitidos, combinada con `FRONTEND_ORIGIN`. |
+| `SESSION_SAME_SITE` | `lax`, `strict` o `none`; el proxy de mismo origen usa `lax`. |
 | `SESSION_SECURE` | `true` en HTTPS; `SameSite=None` exige cookie segura en producción. |
 | `SESSION_COOKIE_DOMAIN` | Opcional, para el dominio compartido propio. |
 | `OPENAI_API_KEY` | Opcional; clave privada del proveedor para habilitar la respuesta de IA. Sin ella se usa el fallback por reglas. |
@@ -73,7 +73,7 @@ Para generar el hash local sin instalar herramientas adicionales:
 node -e "require('bcryptjs').hash('ELIGE_UNA_CONTRASENA_SEGURA', 12).then(console.log)"
 ```
 
-El archivo `.env.example` solo contiene valores de muestra. `.gitignore` excluye `.env`, archivos SQLite, archivos temporales y solicitudes locales. Configura `OPENAI_API_KEY` solo en `.env` local o en los secretos del servicio backend.
+El archivo `.env.example` solo contiene valores de ejemplo. `.gitignore` excluye `.env`, archivos SQLite, archivos temporales y solicitudes locales. Configura `OPENAI_API_KEY` solo en `.env` local o en los secretos del servicio backend.
 
 ## Catálogo y fuente de precios
 
@@ -118,13 +118,11 @@ Helmet configura cabeceras de seguridad. Express limita los cuerpos JSON, valida
 
 El formulario envía `POST /api/solicitudes`, valida también en el servidor y responde con un identificador de seguimiento. Exige un producto de interés válido en el catálogo y al menos uno entre teléfono y correo. El administrador puede filtrar, confirmar, marcar como atendida o eliminar las solicitudes. Los endpoints administrativos de lectura y escritura rechazan usuarios sin sesión (`401`).
 
-El login usa bcrypt y protección contra fuerza bruta. Las cookies son `HttpOnly`; en producción son `Secure` y usan `SameSite=None` para permitir el flujo entre dominios, con `credentials: "include"` y CORS con credenciales. Las cookies de terceros pueden ser bloqueadas por el navegador, incluso con esos atributos; el login no se debe considerar probado en producción hasta verificarlo en los navegadores objetivo.
+El login usa bcrypt y protección contra fuerza bruta. Las cookies son `HttpOnly` y `Secure` en producción. La publicación en Netlify usa un proxy de mismo origen, por lo que configura `SESSION_SAME_SITE=lax` y evita depender de cookies de terceros.
 
-### Cookies entre Pages y API
+### Cookies entre frontend y API
 
-La opción más simple para conservar cookies es asignar un dominio propio al frontend de Pages (por ejemplo `www.tudominio.com`) y usar un subdominio para la API (`api.tudominio.com`). Ambos quedan bajo el mismo sitio registrable; configura el origen CORS exacto, HTTPS y, si se necesita, `SESSION_COOKIE_DOMAIN=.tudominio.com`.
-
-Alternativamente, pon un proxy inverso delante del backend y sirve la API bajo el mismo origen del frontend, por ejemplo `www.tudominio.com/api/*`. GitHub Pages por sí solo solo entrega archivos estáticos y **no puede ejecutar un proxy**. Para esa opción se requiere una capa de proxy real, como Cloudflare Worker/Reverse Proxy, que reenvíe `/api/*` al servidor Node sin exponer secretos. El Worker no debe suplantar al cliente ni omitir la autenticación. Un dominio personalizado con subdominios suele ser la alternativa más sencilla.
+El frontend publicado usa `https://michemango.netlify.app/api` y la regla de reescritura en `public/_redirects` reenvía las solicitudes al backend. El navegador ve frontend y API bajo el mismo origen; el backend acepta el origen exacto `https://michemango.netlify.app`. Para otro dominio, actualiza `FRONTEND_ORIGIN` y `CORS_ORIGINS` en el backend.
 
 ## Asistente de producto
 
@@ -136,41 +134,30 @@ La clave se obtiene directamente del proveedor y se guarda como secreto del back
 
 `public/js/config.js` tiene el número internacional de WhatsApp obtenido del sitio original del proyecto. Es un único valor usado por el botón flotante, el contacto y el pedido. Los precios actuales residen en `src/data/productos.json` para sembrar la base nueva y luego en la base activa; frontend y recomendador leen el catálogo vigente desde el servidor. No mantengas otra copia de precios en los archivos públicos. El pedido solo abre un borrador de WhatsApp; no registra una venta ni confirma que se haya enviado.
 
-## GitHub Pages
+## Publicar en Netlify y Render
 
-`.github/workflows/pages.yml` publica solo `public/` en la rama `main` o al ejecutarlo manualmente. `public/index.html` es la entrada y usa recursos relativos para funcionar bajo `/<repositorio>/`. La raíz `index.html` sirve solo para Live Server.
+El frontend se publica desde `public/` en Netlify. El backend y PostgreSQL se describen en el Blueprint [render.yaml](./render.yaml), con servicio Node.js `michemango-api` y base PostgreSQL en la misma región. El Blueprint usa planes pagos de Render; revisa el costo mostrado por Render antes de aprobar la creación.
 
-1. En GitHub abre **Settings → Pages** y elige **GitHub Actions** como origen. Para este repositorio, la URL de proyecto esperada es `https://lombanarafael.github.io/Michemango/` y el origen (sin ruta final) es `https://lombanarafael.github.io`.
-2. Provisiona/despliega el backend con una URL HTTPS propia del servicio; por ejemplo `https://<nombre-del-servicio>.onrender.com`. No inventes un hostname: sustituye el ejemplo por el asignado al crear el servicio.
-3. En la configuración privada del backend, establece `FRONTEND_ORIGIN=https://lombanarafael.github.io` (o el dominio propio exacto), `NODE_ENV=production`, `DATABASE_URL`, `DATABASE_SSL=true` según indique PostgreSQL, `ADMIN_USER`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET` y `SESSION_SECURE=true`. `OPENAI_API_KEY` se agrega ahí para activar el modo IA; si no se configura, el fallback por reglas sigue funcionando.
-4. Antes de publicar el frontend, reemplaza `apiBasePublicada = ""` en `public/js/config.js` por el origen HTTPS real, sin ruta ni `/` final, por ejemplo `apiBasePublicada = "https://<nombre-del-servicio>.onrender.com"`. Esta URL es pública, no un secreto.
-5. Revisa **Actions**, abre Pages y prueba `GET <API>/api/productos`. La respuesta debe incluir `Access-Control-Allow-Origin: https://lombanarafael.github.io` y `Access-Control-Allow-Credentials: true`.
-6. Comprueba envío de formulario y asistente. Luego inicia sesión desde la página Pages y verifica que `/api/admin/session` responda autenticado. DevTools → Network → login debe mostrar `Set-Cookie` con `HttpOnly`, `Secure` y `SameSite=None`; el navegador debe reenviar la cookie en llamadas protegidas. No publiques ni aceptes formularios hasta completar la prueba.
+1. En Render, crea un **Blueprint** desde este repositorio y aprueba la configuración de `render.yaml`. Render creará el servicio y la base, conectará `DATABASE_URL`, generará `SESSION_SECRET` y usará `npm ci` / `npm start`.
+2. Cuando Render lo solicite, define `ADMIN_USER` y proporciona en `ADMIN_PASSWORD_HASH` un hash bcrypt vigente. No pongas la contraseña sin hash; si pudo quedar expuesta, cámbiala y genera un hash nuevo antes de desplegar. `OPENAI_API_KEY` es opcional; si queda vacío, el recomendador funciona con reglas. No compartas esos valores ni los añadas al repositorio.
+3. Espera el despliegue y verifica `https://<URL-REAL-DEL-SERVICIO>/api/health`. La URL esperada por el nombre del Blueprint es `https://michemango-api.onrender.com`, pero usa la URL exacta que Render muestre.
+4. En Netlify, conecta el repositorio y publica la carpeta `public`. Abre [public/_redirects](./public/_redirects) y reemplaza solo el host de `michemango-api.onrender.com` por la URL real de Render si es distinta. Conserva la ruta `/api/:splat` y el código `200`. `apiBasePublicada` debe seguir siendo `/api` en [public/js/config.js](./public/js/config.js); así el navegador usa el proxy del mismo origen.
+5. Espera el despliegue de Netlify. Abre `https://michemango.netlify.app/api/health` y `https://michemango.netlify.app/api/productos`; la primera respuesta debe indicar `status: "ok"` y la segunda debe listar el catálogo.
+6. Comprueba el origen permitido directamente con `curl.exe -i -H "Origin: https://michemango.netlify.app" https://<URL-REAL-DEL-SERVICIO>/api/productos`. La respuesta debe incluir `Access-Control-Allow-Origin: https://michemango.netlify.app` y `Access-Control-Allow-Credentials: true`. Para preflight, añade `-X OPTIONS -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type"` y consulta `/api/solicitudes`; se espera `204`.
+7. Envía una solicitud desde el sitio, inicia sesión, cambia su estado en el panel y recarga para comprobar persistencia. Revisa en Chrome, Edge y móvil que la cookie tenga `HttpOnly`, `Secure` y `SameSite=Lax`, y que una ruta administrativa sin sesión responda `401`.
 
-El workflow no publica el backend, `.env`, claves ni solicitudes locales. No se ha hecho push ni publicación en esta tarea.
+No hace falta cambiar la URL de API en JavaScript cuando el hostname del servicio varíe: cambia únicamente el destino de `/api/*` en `public/_redirects`. La publicación del backend y de Netlify requiere acceso a las cuentas del propietario.
 
-## Despliegue sugerido
-
-Una combinación posible es Render Web Service para Node.js y Neon para PostgreSQL:
-
-1. Crea una instancia PostgreSQL administrada. En **Connect**, copia la URI `postgresql://...` privada y guárdala como `DATABASE_URL` del servicio; no la coloques en Pages ni en archivos versionados.
-2. Crea el Web Service Node.js conectado al repositorio, selecciona la raíz que contiene `package.json`, fija Node 22 o superior, y usa `npm install` como instalación y `npm start` como comando de inicio. El arranque aplica las migraciones; `npm run db:init` permite inicializar/verificar el esquema manualmente.
-3. En los secretos del backend define `NODE_ENV=production`, `ADMIN_USER`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, `DATABASE_URL`, `DATABASE_SSL`, `FRONTEND_ORIGIN=https://lombanarafael.github.io`, `SESSION_SECURE=true`, `SESSION_SAME_SITE=none` y `OPENAI_API_KEY` si se dispone de una clave. `PORT` lo proporciona el alojamiento. La IA ya está conectada en el backend, pero sin la clave se usa el modo de reglas.
-4. Despliega y verifica `https://<host-real-del-backend>/api/health` y `/api/productos`.
-5. En `public/js/config.js`, configura `apiBasePublicada` con ese host HTTPS real; publica Pages después de aprobar el commit.
-6. Prueba CORS: `curl.exe -i -H "Origin: https://lombanarafael.github.io" https://<host-real-del-backend>/api/productos`. Debe responder `200` con `Access-Control-Allow-Origin` igual al origen de Pages. Prueba preflight: `curl.exe -i -X OPTIONS -H "Origin: https://lombanarafael.github.io" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type" https://<host-real-del-backend>/api/solicitudes`; se espera `204`.
-7. Desde Pages, inicia sesión, revisa `Set-Cookie` y luego la petición con `credentials: include`; confirma que `/api/admin/session` da `200` autenticado y que el listado protegido funciona tras recargar. Si el navegador bloquea cookies de terceros, usa dominios propios bajo el mismo sitio (por ejemplo `www` y `api`) o un proxy de mismo origen como se explica arriba. No reduzcas la seguridad de las cookies ni abras CORS a `*` para sortear el bloqueo.
-
-El servicio y la base remotos no se han creado desde este entorno. Sus URL y variables privadas deben completarse en el hosting antes del despliegue.
+El workflow `.github/workflows/pages.yml` sigue disponible para GitHub Pages, pero Pages no ejecuta Express ni el proxy de Netlify. Si se cambia el frontend a Pages, se necesita un proxy independiente y actualizar el origen CORS.
 
 ## Checklist antes de aceptar pedidos
 
 - [ ] Agregar una clave propia en `OPENAI_API_KEY` en los secretos del backend si se quiere la respuesta del proveedor; sin ella se mantiene activo el modo de reglas.
-- [ ] Aprovisionar PostgreSQL, probar registro y persistencia después de reiniciar.
-- [ ] Publicar el backend y Pages; fijar la URL HTTPS real de API y verificar catálogo, CORS y formulario.
-- [ ] Probar el login y el cierre de sesión desde Pages en Chrome, Edge y los móviles objetivo; solucionar cookies de terceros si el navegador las bloquea.
+- [ ] Aprovisionar el Blueprint de Render y completar los secretos administrativos.
+- [ ] Reemplazar el host del proxy en `public/_redirects` si Render asignó una URL distinta.
+- [ ] Probar catálogo, formulario, login y persistencia desde Netlify en Chrome, Edge y móvil.
 - [ ] Revisar cada estado y el borrador de WhatsApp; el borrador no confirma una compra.
 
 ## Pruebas y límites actuales
 
-Los checks locales se ejecutan con `npm run check`; el flujo PostgreSQL y el despliegue público requieren las cuentas y URL reales del propietario. En este entorno no existe una base PostgreSQL provisionada, URL de backend ni sitio publicado, así que no se afirma que la persistencia PostgreSQL, CORS/cookies públicos o Pages estén probados en producción. Verifica Chrome, Edge y un móvil al publicar; la prueba local no sustituye esas comprobaciones.
+Los checks locales se ejecutan con `npm run check`; el flujo PostgreSQL y el despliegue público requieren las cuentas y URL reales del propietario. El proxy queda preparado para `michemango-api.onrender.com`, pero no se ha creado el servicio de Render desde este entorno. La persistencia PostgreSQL, CORS/cookies públicos y la disponibilidad real en Netlify deben verificarse después de desplegar. La prueba local no sustituye esas comprobaciones.

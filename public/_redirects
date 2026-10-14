@@ -1,1 +1,5 @@
+# Destino provisional del Blueprint; cambia el host por la URL HTTPS exacta que Render asigne.
+/api/* https://michemango-api.onrender.com/api/:splat 200
+
+# Permite servir la página principal para rutas estáticas desconocidas.
 /* /index.html 200
