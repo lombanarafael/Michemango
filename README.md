@@ -17,17 +17,18 @@ src/
   routes/{admin.js,adminAuth.js,adminApi.js,contacto.js,recomendador.js}
   middleware/{requiereAdmin.js,rateLimiters.js,requestLogger.js}
   data/{storage.js,productos.json,solicitudes.js}
+  scripts/init-db.js
 .github/workflows/pages.yml
 index.html
 package.json
 .env.example
 ```
 
-`public/js/chatbot.js` controla el widget flotante. El proveedor de IA, si se configura, se llama solo desde `src/routes/recomendador.js`; sin clave se usa un recomendador determinista por sabor, tamaño y ocasión. El frontend no recibe ni contiene la clave.
+`public/js/chatbot.js` controla el widget flotante. La integración de IA está habilitada en `src/routes/recomendador.js`; el backend lee `OPENAI_API_KEY` desde el entorno. Si no hay clave, usa reglas deterministas por sabor, tamaño y ocasión. El frontend no recibe ni contiene la clave.
 
 ## Requisitos y ejecución local
 
-Requiere Node.js 18 o superior y npm. Desde PowerShell en la raíz:
+Requiere Node.js 22.13 o superior y npm. Desde PowerShell en la raíz:
 
 ```powershell
 Copy-Item .env.example .env
@@ -43,7 +44,7 @@ npm run dev
 npm start
 ```
 
-El sitio de desarrollo estará en `http://localhost:3000/`; comprueba `http://localhost:3000/api/health`. `npm run check` comprueba sintaxis del backend y las rutas. El servidor usa PostgreSQL si se configura `DATABASE_URL`; sin ella, desarrollo usa JSON local con reemplazo atómico. El archivo local de solicitudes está excluido de Git.
+El sitio de desarrollo estará en `http://localhost:3000/`; comprueba `http://localhost:3000/api/health`. `npm run check` comprueba la sintaxis de backend y frontend. `npm run db:init` crea el esquema y aplica la importación inicial; también se ejecuta al arrancar el servidor. Con `DATABASE_URL`, se usa PostgreSQL. Sin esa variable en desarrollo, se usa SQLite en `src/data/michemango.sqlite`. PostgreSQL es obligatorio en producción. Los archivos SQLite locales se excluyen de Git.
 
 ## Variables privadas del backend
 
@@ -63,7 +64,7 @@ Configúralas en `.env` local o en la configuración de variables secretas del p
 | `SESSION_SAME_SITE` | `lax`, `strict` o `none`; producción usa `none` de forma predeterminada. |
 | `SESSION_SECURE` | `true` en HTTPS; `SameSite=None` exige cookie segura en producción. |
 | `SESSION_COOKIE_DOMAIN` | Opcional, para el dominio compartido propio. |
-| `OPENAI_API_KEY` | Opcional; clave privada del proveedor para el asistente de IA. |
+| `OPENAI_API_KEY` | Opcional; clave privada del proveedor para habilitar la respuesta de IA. Sin ella se usa el fallback por reglas. |
 | `OPENAI_MODEL` | Opcional; por defecto `gpt-4o-mini`. |
 
 Para generar el hash local sin instalar herramientas adicionales:
@@ -72,13 +73,17 @@ Para generar el hash local sin instalar herramientas adicionales:
 node -e "require('bcryptjs').hash('ELIGE_UNA_CONTRASENA_SEGURA', 12).then(console.log)"
 ```
 
-El archivo `.env.example` solo contiene valores de muestra. `.gitignore` excluye `.env`, archivos temporales y las solicitudes locales.
+El archivo `.env.example` solo contiene valores de muestra. `.gitignore` excluye `.env`, archivos SQLite, archivos temporales y solicitudes locales. Configura `OPENAI_API_KEY` solo en `.env` local o en los secretos del servicio backend.
+
+## Catálogo y fuente de precios
+
+`src/data/productos.json` es la fuente de precios para la inicialización del catálogo. En uso, el backend obtiene los valores actuales de la base configurada (PostgreSQL desplegado o SQLite local) y el frontend y el recomendador consumen ese mismo endpoint `GET /api/productos`; no hay una segunda lista de precios en JavaScript. Las modificaciones hechas en el panel se guardan en esa base. La configuración del frontend contiene solo el número público de WhatsApp.
 
 ## PostgreSQL y persistencia
 
-[Neon](https://neon.tech/) es una opción PostgreSQL compatible con el cliente `pg` del proyecto. Crea una base, abre **Connect**, selecciona Node.js/`node-postgres` y guarda su cadena privada en `DATABASE_URL` del servicio de backend. Selecciona TLS según la documentación actual del proveedor y su valor de `DATABASE_SSL`; no desactives la validación de certificados.
+[Neon](https://neon.tech/) es una opción PostgreSQL compatible con el cliente `pg` del proyecto. Crea un proyecto y una base, abre **Connect**, selecciona Node.js/`node-postgres` y copia la URI privada (normalmente empieza con `postgresql://`) en `DATABASE_URL` de los secretos del backend. Configura `DATABASE_SSL=true` si la instrucción de conexión del proveedor requiere TLS; la conexión valida certificados y no desactiva esa comprobación. No pongas la URI en `public/`, Pages, Git o el chat.
 
-Al iniciar, el backend crea las tablas `michemango_products`, `michemango_requests`, `michemango_migrations` y `michemango_sessions`. Importa el catálogo y las solicitudes JSON locales solo si la tabla respectiva está vacía y registra la migración para no repetirla. No elimina los archivos originales. Las consultas con valores recibidos del navegador usan parámetros `$1`, `$2`, etc. Ante `SIGINT`/`SIGTERM`, el servidor cierra HTTP y el pool de PostgreSQL.
+`npm run db:init` y el arranque crean/verifican las tablas `michemango_products`, `michemango_requests`, `michemango_migrations` y, al iniciar Express con PostgreSQL, `michemango_sessions`. Las migraciones de esquema son idempotentes; el import inicial de los JSON legacy ocurre una sola vez y solo si la tabla destino está vacía. El SQLite local crea tablas equivalentes y conserva los datos al reiniciar. Los JSON legacy originales no se borran. Las consultas con valores externos usan parámetros. Ante `SIGINT`/`SIGTERM`, el servidor cierra HTTP y el almacenamiento.
 
 Para verificar persistencia luego de aprovisionar la base, envía una solicitud de prueba, búscala en el panel y consulta en la consola SQL:
 
@@ -89,7 +94,7 @@ ORDER BY fecha DESC
 LIMIT 5;
 ```
 
-Reinicia el servicio backend y confirma que la misma solicitud siga en el panel o en SQL. No se ha aprovisionado una base real; hasta realizar estas comprobaciones, persistencia de producción sigue pendiente.
+Reinicia el servicio backend y confirma que la misma solicitud siga en el panel o en SQL. El reinicio de SQLite local no sustituye la prueba de PostgreSQL desplegado; esta última solo se completa tras provisionar una base real.
 
 ## API del backend
 
@@ -123,23 +128,24 @@ Alternativamente, pon un proxy inverso delante del backend y sirve la API bajo e
 
 ## Asistente de producto
 
-El widget flotante solicita sabor, tamaño y ocasión. Si existe `OPENAI_API_KEY`, el backend pide una sugerencia al modelo configurado, valida que el nombre exista en el catálogo y devuelve solo el producto y su motivo. Si no hay clave, falla el proveedor o su respuesta no coincide con el catálogo, se usa el modo de reglas y la respuesta lo indica. El modelo no inventa precios: el frontend muestra el precio actual del catálogo como demostrativo.
+El widget flotante solicita sabor, tamaño y ocasión. Si existe `OPENAI_API_KEY`, el backend pide una sugerencia al modelo configurado, valida que el nombre exista en el catálogo y devuelve solo el producto y su motivo. Si no hay clave, falla el proveedor o su respuesta no coincide con el catálogo, se usa el modo de reglas y la respuesta lo indica. El precio mostrado se obtiene del catálogo vigente del backend.
 
 La clave se obtiene directamente del proveedor y se guarda como secreto del backend; no la pegues en `public/`, el navegador, Git, capturas ni mensajes. Antes de habilitar IA pública, revisa el costo, límites, condiciones del proveedor y tratamiento de datos. No se envían nombre, correo ni teléfono al modelo.
 
-## Configuración pública: WhatsApp y precios
+## WhatsApp y precios vigentes
 
-La única configuración comercial pendiente está en `public/js/config.js`. Sustituye `whatsappNumber: "TODO_CONFIRMAR"` por el número oficial internacional en dígitos, y reemplaza los cuatro valores `TODO_CONFIRMAR` del objeto `preciosOficiales` cuando se confirmen. Los precios numéricos de `src/data/productos.json` son datos demostrativos preexistentes, no precios oficiales; antes de publicar, actualiza el catálogo desde el panel si la base ya se inicializó. La interfaz advierte que son valores de demostración. El pedido solo abre un borrador de WhatsApp, no registra una venta ni confirma su envío; además, el enlace se bloquea hasta configurar un número válido.
+`public/js/config.js` tiene el número internacional de WhatsApp obtenido del sitio original del proyecto. Es un único valor usado por el botón flotante, el contacto y el pedido. Los precios actuales residen en `src/data/productos.json` para sembrar la base nueva y luego en la base activa; frontend y recomendador leen el catálogo vigente desde el servidor. No mantengas otra copia de precios en los archivos públicos. El pedido solo abre un borrador de WhatsApp; no registra una venta ni confirma que se haya enviado.
 
 ## GitHub Pages
 
 `.github/workflows/pages.yml` publica solo `public/` en la rama `main` o al ejecutarlo manualmente. `public/index.html` es la entrada y usa recursos relativos para funcionar bajo `/<repositorio>/`. La raíz `index.html` sirve solo para Live Server.
 
-1. En GitHub abre **Settings → Pages** y elige **GitHub Actions** como origen.
-2. Configura `apiBasePublicada` en `public/js/config.js` con el origen HTTPS real del backend, sin `/` final; no inventes la URL.
-3. En el servicio backend configura `FRONTEND_ORIGIN` con el origen HTTPS exacto, sin la ruta del repositorio. Ejemplo de formato: `https://<usuario>.github.io`.
-4. Revisa **Actions**: el workflow debe completar la subida del artefacto y el despliegue. Luego abre la URL que GitHub asigna.
-5. Comprueba catálogo, solicitud, asistente y login desde ese dominio; los orígenes y cookies de producción no se verifican desde localhost.
+1. En GitHub abre **Settings → Pages** y elige **GitHub Actions** como origen. Para este repositorio, la URL de proyecto esperada es `https://lombanarafael.github.io/Michemango/` y el origen (sin ruta final) es `https://lombanarafael.github.io`.
+2. Provisiona/despliega el backend con una URL HTTPS propia del servicio; por ejemplo `https://<nombre-del-servicio>.onrender.com`. No inventes un hostname: sustituye el ejemplo por el asignado al crear el servicio.
+3. En la configuración privada del backend, establece `FRONTEND_ORIGIN=https://lombanarafael.github.io` (o el dominio propio exacto), `NODE_ENV=production`, `DATABASE_URL`, `DATABASE_SSL=true` según indique PostgreSQL, `ADMIN_USER`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET` y `SESSION_SECURE=true`. `OPENAI_API_KEY` se agrega ahí para activar el modo IA; si no se configura, el fallback por reglas sigue funcionando.
+4. Antes de publicar el frontend, reemplaza `apiBasePublicada = ""` en `public/js/config.js` por el origen HTTPS real, sin ruta ni `/` final, por ejemplo `apiBasePublicada = "https://<nombre-del-servicio>.onrender.com"`. Esta URL es pública, no un secreto.
+5. Revisa **Actions**, abre Pages y prueba `GET <API>/api/productos`. La respuesta debe incluir `Access-Control-Allow-Origin: https://lombanarafael.github.io` y `Access-Control-Allow-Credentials: true`.
+6. Comprueba envío de formulario y asistente. Luego inicia sesión desde la página Pages y verifica que `/api/admin/session` responda autenticado. DevTools → Network → login debe mostrar `Set-Cookie` con `HttpOnly`, `Secure` y `SameSite=None`; el navegador debe reenviar la cookie en llamadas protegidas. No publiques ni aceptes formularios hasta completar la prueba.
 
 El workflow no publica el backend, `.env`, claves ni solicitudes locales. No se ha hecho push ni publicación en esta tarea.
 
@@ -147,25 +153,24 @@ El workflow no publica el backend, `.env`, claves ni solicitudes locales. No se 
 
 Una combinación posible es Render Web Service para Node.js y Neon para PostgreSQL:
 
-1. Crea la base PostgreSQL y copia su cadena privada en el almacén de secretos del Web Service.
-2. Conecta el repositorio y configura como raíz el directorio que contiene `package.json`, comando de instalación `npm install` y comando de inicio `npm start`.
-3. Configura `NODE_ENV=production`, `ADMIN_USER`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, `DATABASE_URL`, `DATABASE_SSL`, `FRONTEND_ORIGIN` y, si se habilita IA, `OPENAI_API_KEY` y `OPENAI_MODEL`. `PORT` lo proporciona normalmente el alojamiento.
-4. Despliega y verifica `/api/health` y `/api/productos`.
-5. Configura `apiBasePublicada`, publica Pages después de autorizarlo, y prueba CORS, formulario, persistencia y login desde el dominio público.
+1. Crea una instancia PostgreSQL administrada. En **Connect**, copia la URI `postgresql://...` privada y guárdala como `DATABASE_URL` del servicio; no la coloques en Pages ni en archivos versionados.
+2. Crea el Web Service Node.js conectado al repositorio, selecciona la raíz que contiene `package.json`, fija Node 22 o superior, y usa `npm install` como instalación y `npm start` como comando de inicio. El arranque aplica las migraciones; `npm run db:init` permite inicializar/verificar el esquema manualmente.
+3. En los secretos del backend define `NODE_ENV=production`, `ADMIN_USER`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, `DATABASE_URL`, `DATABASE_SSL`, `FRONTEND_ORIGIN=https://lombanarafael.github.io`, `SESSION_SECURE=true`, `SESSION_SAME_SITE=none` y `OPENAI_API_KEY` si se dispone de una clave. `PORT` lo proporciona el alojamiento. La IA ya está conectada en el backend, pero sin la clave se usa el modo de reglas.
+4. Despliega y verifica `https://<host-real-del-backend>/api/health` y `/api/productos`.
+5. En `public/js/config.js`, configura `apiBasePublicada` con ese host HTTPS real; publica Pages después de aprobar el commit.
+6. Prueba CORS: `curl.exe -i -H "Origin: https://lombanarafael.github.io" https://<host-real-del-backend>/api/productos`. Debe responder `200` con `Access-Control-Allow-Origin` igual al origen de Pages. Prueba preflight: `curl.exe -i -X OPTIONS -H "Origin: https://lombanarafael.github.io" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type" https://<host-real-del-backend>/api/solicitudes`; se espera `204`.
+7. Desde Pages, inicia sesión, revisa `Set-Cookie` y luego la petición con `credentials: include`; confirma que `/api/admin/session` da `200` autenticado y que el listado protegido funciona tras recargar. Si el navegador bloquea cookies de terceros, usa dominios propios bajo el mismo sitio (por ejemplo `www` y `api`) o un proxy de mismo origen como se explica arriba. No reduzcas la seguridad de las cookies ni abras CORS a `*` para sortear el bloqueo.
 
-Las cuentas, instancias, secretos, URL pública de API y el despliegue siguen pendientes de provisionar por el propietario.
+El servicio y la base remotos no se han creado desde este entorno. Sus URL y variables privadas deben completarse en el hosting antes del despliegue.
 
 ## Checklist antes de aceptar pedidos
 
-- [ ] Confirmar WhatsApp oficial y sustituir `TODO_CONFIRMAR` en `public/js/config.js`.
-- [ ] Confirmar los cuatro precios oficiales y actualizar el catálogo del backend.
-- [ ] Decidir si se activa IA; si es así, guardar una clave propia en `OPENAI_API_KEY` y verificar costos/límites.
-- [ ] Crear una contraseña administrativa segura, generar su hash bcrypt y configurar las variables privadas.
+- [ ] Agregar una clave propia en `OPENAI_API_KEY` en los secretos del backend si se quiere la respuesta del proveedor; sin ella se mantiene activo el modo de reglas.
 - [ ] Aprovisionar PostgreSQL, probar registro y persistencia después de reiniciar.
-- [ ] Publicar el backend y Pages; verificar catálogo, CORS y formulario en la URL real.
+- [ ] Publicar el backend y Pages; fijar la URL HTTPS real de API y verificar catálogo, CORS y formulario.
 - [ ] Probar el login y el cierre de sesión desde Pages en Chrome, Edge y los móviles objetivo; solucionar cookies de terceros si el navegador las bloquea.
 - [ ] Revisar cada estado y el borrador de WhatsApp; el borrador no confirma una compra.
 
 ## Pruebas y límites actuales
 
-Los checks de sintaxis y las pruebas locales deben ejecutarse con `npm run check` y las rutas locales. En este entorno no existe una base PostgreSQL provisionada, URL de backend o sitio publicado, así que no se afirma que la conexión, persistencia tras reinicio, CORS público, cookies entre dominios o flujo de GitHub Pages estén probados en producción. Verifica Chrome, Edge y un móvil real al publicar; el navegador integrado permite una revisión local, no sustituye esas pruebas.
+Los checks locales se ejecutan con `npm run check`; el flujo PostgreSQL y el despliegue público requieren las cuentas y URL reales del propietario. En este entorno no existe una base PostgreSQL provisionada, URL de backend ni sitio publicado, así que no se afirma que la persistencia PostgreSQL, CORS/cookies públicos o Pages estén probados en producción. Verifica Chrome, Edge y un móvil al publicar; la prueba local no sustituye esas comprobaciones.
