@@ -3,13 +3,25 @@ const path = require("path");
 const { Pool } = require("pg");
 
 const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_SSL = process.env.DATABASE_SSL;
+
+if (DATABASE_SSL !== undefined && !["true", "false"].includes(DATABASE_SSL)) {
+  throw new Error("DATABASE_SSL debe ser true o false.");
+}
+
 const pool = DATABASE_URL
   ? new Pool({
       connectionString: DATABASE_URL,
-      ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: true } : undefined,
+      ssl: DATABASE_SSL === "true" ? { rejectUnauthorized: true } : undefined,
       connectionTimeoutMillis: 10000,
     })
   : null;
+
+if (pool) {
+  pool.on("error", (error) => {
+    console.error("Se perdió una conexión inactiva con PostgreSQL.", error.code || "DATABASE_CONNECTION_ERROR");
+  });
+}
 const PRODUCTOS_JSON = path.join(__dirname, "productos.json");
 const SOLICITUDES_JSON = path.join(__dirname, "solicitudes.json");
 

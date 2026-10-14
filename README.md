@@ -98,15 +98,17 @@ Un visitante sin sesión recibe `401` al acceder a la API de administración. La
 
 En desarrollo, si `DATABASE_URL` está vacío, productos y solicitudes se escriben en `src/data/productos.json` y `src/data/solicitudes.json`. Ese modo conserva datos entre reinicios locales, pero un archivo en disco de un alojamiento efímero **no es almacenamiento persistente garantizado**. Las solicitudes se excluyen de Git.
 
-Para producción el servidor exige PostgreSQL mediante `DATABASE_URL`. Al arrancar crea las tablas de productos y solicitudes, importa catálogo/solicitudes JSON existentes solo si sus tablas de destino están vacías, y conserva los JSON originales como respaldo. La sesión administrativa también usa PostgreSQL (`michemango_sessions`) en vez del almacén volátil predeterminado. El primer inicio y la conexión real a la base deben verificarse antes de aceptar datos. Si el proveedor requiere TLS, configura `DATABASE_SSL=true`; usa el modo TLS que indique el proveedor.
+Para PostgreSQL administrado, [Neon](https://neon.tech/) es una opción compatible con `pg` y Express. Crea allí un proyecto y una base, abre **Connect**, elige Node.js/`node-postgres` y copia la cadena de conexión que entrega el proveedor. Si la opción pooled está disponible, se puede usar para el servicio web; conserva la cadena privada y no la pegues en el repositorio, el frontend, capturas ni mensajes públicos. En el servicio que ejecuta Node configura esa cadena como `DATABASE_URL`. Configura `DATABASE_SSL=true` cuando la guía de conexión del proveedor solicite TLS; la conexión de este proyecto valida certificados y no desactiva esa comprobación. En desarrollo local, configura ambas variables en `.env`; el archivo `.env.example` solo muestra el formato ficticio.
 
-No se necesita entregar la URL de la base dentro del repositorio. Cuando crees una instancia PostgreSQL, copia la cadena de conexión privada en la variable de entorno `DATABASE_URL` del servicio backend. Mantén `DATABASE_SSL=false` salvo que la configuración del proveedor solicite TLS.
+En producción el servidor exige PostgreSQL mediante `DATABASE_URL` y `CORS_ORIGINS`. Al arrancar crea las tablas `michemango_products`, `michemango_requests`, `michemango_migrations` y la tabla persistente de sesiones `michemango_sessions`. La migración `json-files-v1`, dentro de una transacción, importa cada archivo JSON solo si la tabla de destino correspondiente está vacía y marca la importación para no repetirla. Los JSON originales no se borran. Las consultas que reciben valores externos usan parámetros `$1`, `$2`, etc.; los nombres de tablas y columnas son constantes del código. El backend y la conexión PostgreSQL deben estar disponibles antes de aceptar formularios. Al recibir `SIGINT` o `SIGTERM`, Express deja de aceptar conexiones, cierra el servidor HTTP y finaliza el pool de PostgreSQL.
+
+Para verificar persistencia real, envía un formulario de prueba, confirma su registro desde la administración y en la consola SQL del proveedor consulta `SELECT id, fecha, nombre, correo, estado FROM michemango_requests ORDER BY fecha DESC LIMIT 5;`. Reinicia el servicio backend y vuelve a consultar la solicitud desde el panel o repite la consulta SQL. No borres ni edites los registros reales mientras haces la prueba. Hasta que una base se cree y estas comprobaciones se ejecuten, la persistencia de producción queda pendiente.
 
 ## Administración y seguridad
 
-Las credenciales están en variables privadas del backend: `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH` y `SESSION_SECRET`. El servidor no acepta contraseñas desde JavaScript salvo el envío del formulario de login sobre HTTPS; el hash no está en el frontend. La cookie de sesión es `HttpOnly`, `Secure` en producción y `SameSite=None` entre dominios, y las rutas revisan autorización en el servidor. `connect-pg-simple` conserva sesiones en PostgreSQL.
+Las credenciales están en variables privadas del backend: `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH` y `SESSION_SECRET`. El servidor no acepta contraseñas desde JavaScript salvo el envío del formulario de login sobre HTTPS; el hash no está en el frontend. El login renueva el ID de sesión. La cookie es `HttpOnly`, `Secure` en producción y `SameSite=None` en producción para permitir solicitudes entre dominios; los scripts envían las solicitudes administrativas con `credentials: "include"` y el backend responde con un origen CORS exacto y `Access-Control-Allow-Credentials: true`. `connect-pg-simple` conserva sesiones en PostgreSQL. Estos ajustes no pueden superar el bloqueo de cookies de terceros aplicado por algunos navegadores.
 
-Como Pages y el backend suelen tener dominios distintos, algunos navegadores pueden bloquear cookies de terceros. Verifica el inicio de sesión desde la URL de Pages en el navegador objetivo; para producción fiable se recomienda un dominio propio con frontend y API en el mismo sitio o una solución de identidad apropiada a la plataforma. CORS por sí solo no sustituye autenticación ni autorización.
+No se debe considerar el login listo para producción hasta probarlo desde el dominio publicado en los navegadores objetivo. Con los dominios predeterminados, `usuario.github.io` y el dominio del backend son sitios distintos y la cookie puede bloquearse. Alternativas: usar un dominio propio para Pages y un subdominio de API bajo el mismo sitio registrable (manteniendo HTTPS, CORS exacto y cookies seguras), o poner frontend y API detrás de un proxy que los sirva bajo el mismo origen. CORS por sí solo no sustituye autenticación ni autorización.
 
 ## GitHub Pages
 
@@ -123,7 +125,15 @@ El workflow sube solamente `public/`; no publica `.env`, el código del backend 
 
 ## Despliegue del backend
 
-Usa un servicio que ejecute Node.js/Express y PostgreSQL administrado. En el servicio Node configura el repositorio y la raíz del proyecto (la carpeta que contiene `package.json`), comando de inicio `npm start`, y estas variables privadas:
+Una combinación sencilla es un servicio web Node.js compatible con Express (por ejemplo, [Render Web Service](https://render.com/)) y PostgreSQL administrado (por ejemplo, [Neon](https://neon.tech/)). Para configurarla:
+
+1. Crea un proyecto y una base en Neon; desde **Connect**, selecciona Node.js/`node-postgres` y copia la cadena de conexión privada.
+2. Crea un Web Service Node en el proveedor de backend, conecta el repositorio y usa como raíz la carpeta que contiene `package.json`. El comando de inicio es `npm start`; usa `npm install` como comando de instalación si la plataforma lo solicita.
+3. En la configuración privada de variables del servicio backend, agrega las variables siguientes. No pongas `DATABASE_URL` en GitHub Pages ni en `public/js/config.js`.
+4. Una vez que la URL pública de Pages esté disponible, agrega su origen HTTPS exacto a `CORS_ORIGINS`. El backend rechaza HTTP, comodines, rutas y orígenes que no coincidan exactamente en producción.
+5. Despliega el backend y verifica primero `/api/health`, después `/api/productos`. Solo entonces configura en `public/js/config.js` el origen HTTPS real del backend.
+
+Variables privadas del servicio:
 
 ```text
 NODE_ENV=production
@@ -132,11 +142,11 @@ ADMIN_USERNAME=<usuario que elijas>
 ADMIN_PASSWORD_HASH=<hash bcrypt generado localmente>
 SESSION_SECRET=<secreto aleatorio de 32 o más caracteres>
 DATABASE_URL=<cadena privada de PostgreSQL del proveedor>
-DATABASE_SSL=<true solo si el proveedor requiere TLS>
+DATABASE_SSL=<true si el proveedor requiere TLS; de lo contrario false>
 CORS_ORIGINS=<origen exacto real de GitHub Pages>
 ```
 
-El servidor escucha `process.env.PORT`. Despliega, verifica `GET https://<backend-real>/api/health`, y después `GET https://<backend-real>/api/productos`. No compartas ni subas el secreto, la cadena de base de datos o el hash de configuración. Los datos JSON existentes no se borran: la inicialización los copia solo si la tabla respectiva está vacía.
+El servidor escucha `process.env.PORT`. `CORS_ORIGINS` debe incluir el origen final del frontend, como `https://<usuario>.github.io` (sin la ruta del repositorio), o el dominio personalizado exacto. Cada origen debe coincidir exactamente con el dominio real. No compartas ni subas el secreto, la cadena de base de datos o el hash de configuración. Los datos JSON existentes no se borran: la inicialización los copia solo si la tabla respectiva está vacía.
 
 No se ha desplegado ningún servicio externo ni se ha comprobado una URL pública. La creación de la cuenta, la base PostgreSQL y la entrada de sus credenciales privadas deben realizarse por el propietario.
 

@@ -57,13 +57,18 @@ origenesConfigurados.forEach((origen) => {
   if (
     origen === "*" ||
     url.origin !== origen ||
-    !["http:", "https:"].includes(url.protocol)
+    !["http:", "https:"].includes(url.protocol) ||
+    (process.env.NODE_ENV === "production" && url.protocol !== "https:")
   ) {
-    throw new Error(`CORS_ORIGINS debe contener solo orígenes exactos HTTP(S), sin rutas ni comodines: ${origen}`);
+    throw new Error(`CORS_ORIGINS debe contener solo orígenes exactos${process.env.NODE_ENV === "production" ? " HTTPS" : " HTTP(S)"}, sin rutas ni comodines: ${origen}`);
   }
 
   origenesPermitidos.add(origen);
 });
+
+if (process.env.NODE_ENV === "production" && origenesPermitidos.size === 0) {
+  throw new Error("CORS_ORIGINS debe incluir al menos un origen HTTPS permitido en producción.");
+}
 
 // Si hay un proxy HTTPS al desplegar, Express podrá reconocer la conexión segura.
 if (process.env.NODE_ENV === "production") {
@@ -179,9 +184,35 @@ app.use((error, req, res, next) => {
 if (require.main === module) {
   inicializarAlmacenamiento()
     .then(() => {
-      app.listen(PUERTO, () => {
+      const servidor = app.listen(PUERTO, () => {
         console.log(`MicheMango está disponible en el puerto ${PUERTO} (almacenamiento: ${modoAlmacenamiento()})`);
       });
+
+      let cerrando = false;
+      const cerrarServidor = (senal) => {
+        if (cerrando) {
+          return;
+        }
+        cerrando = true;
+        console.log(`Cerrando MicheMango (${senal})...`);
+
+        servidor.close((error) => {
+          if (error) {
+            console.error("No se pudo cerrar el servidor HTTP correctamente.");
+            process.exitCode = 1;
+          }
+
+          if (pool) {
+            pool.end().catch(() => {
+              console.error("No se pudo cerrar el pool de PostgreSQL correctamente.");
+              process.exitCode = 1;
+            });
+          }
+        });
+      };
+
+      process.once("SIGINT", () => cerrarServidor("SIGINT"));
+      process.once("SIGTERM", () => cerrarServidor("SIGTERM"));
     })
     .catch((error) => {
       console.error("No se pudo iniciar MicheMango:", error.message);
