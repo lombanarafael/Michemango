@@ -5,7 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MicheMango</title>
-
+    <meta name="description" content="Descubre tus miches de mango favoritas en MicheMango, Barranquilla.">
+    <meta name="theme-color" content="#f28a1a">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
 
 </head>
@@ -21,7 +25,7 @@
             <a href="#nosotros">Nosotros</a>
             <a href="#productos">Productos</a>
             <a href="#pedido">Pedido</a>
-            <a href="#recomendador">Recomendador</a>
+            <a href="#asistente">Recomendador</a>
             <a href="#contacto">Contacto</a>
         </nav>
 
@@ -100,26 +104,6 @@
         <p id="pedido-estado" class="contacto-estado" role="status" aria-live="polite"></p>
     </section>
 
-    <section id="recomendador" class="recomendador-section">
-        <span class="hero-badge">Recomendador por preferencias</span>
-        <h2>Encuentra tu MicheMango ideal</h2>
-        <p>Elige un sabor y tu presupuesto para ver productos del catálogo que pueden gustarte. Es una herramienta de reglas, no una inteligencia artificial.</p>
-        <form id="form-recomendador" class="recomendador-form">
-            <label for="preferencia-sabor">¿Qué sabor prefieres?</label>
-            <select id="preferencia-sabor" name="sabor">
-                <option value="cualquiera">Cualquiera</option>
-                <option value="dulce">Dulce</option>
-                <option value="acido">Ácido</option>
-                <option value="picante">Picante</option>
-                <option value="refrescante">Refrescante</option>
-            </select>
-            <label for="presupuesto-maximo">Presupuesto máximo (COP)</label>
-            <input id="presupuesto-maximo" name="presupuesto" type="number" min="0" step="1000" placeholder="Ej.: 18000">
-            <button class="contacto-button" type="submit">Ver recomendaciones</button>
-        </form>
-        <div id="recomendaciones" class="recomendaciones" aria-live="polite"></div>
-    </section>
-
     <section id="contacto">
 
         <h2>Contáctanos</h2>
@@ -137,11 +121,21 @@
             <label for="contacto-nombre">Nombre</label>
             <input id="contacto-nombre" name="nombre" type="text" maxlength="80" required>
 
-            <label for="contacto-correo">Correo electrónico</label>
-            <input id="contacto-correo" name="correo" type="email" maxlength="120" required>
+            <label for="contacto-producto">Producto de interés</label>
+            <select id="contacto-producto" name="productoInteres" required>
+                <option value="">Selecciona un producto</option>
+                <option value="Micheman">Micheman</option>
+                <option value="Miche Premium">Miche Premium</option>
+                <option value="Mango Explosivo">Mango Explosivo</option>
+                <option value="Mini Miche">Mini Miche</option>
+            </select>
+
+            <label for="contacto-correo">Correo electrónico (opcional)</label>
+            <input id="contacto-correo" name="correo" type="email" maxlength="120" autocomplete="email">
 
             <label for="contacto-telefono">Teléfono o WhatsApp (opcional)</label>
             <input id="contacto-telefono" name="telefono" type="tel" maxlength="25">
+            <small>Es necesario dejar al menos un medio para contactarte: teléfono o correo.</small>
 
             <label for="contacto-tipo">¿En qué te podemos ayudar?</label>
             <select id="contacto-tipo" name="tipo" required>
@@ -166,6 +160,50 @@
         <a class="admin-back-link" href="admin/login.html">Acceso administrativo</a>
 
     </footer>
+
+    <button id="asistente-toggle" class="assistant-toggle" type="button" aria-expanded="false" aria-controls="asistente-panel">
+        <span aria-hidden="true">🥭</span> Ayúdame a elegir
+    </button>
+    <section id="asistente-panel" class="assistant-panel" aria-labelledby="asistente-titulo" hidden>
+        <div class="assistant-heading">
+            <div>
+                <span class="assistant-eyebrow">Asistente MicheMango</span>
+                <h2 id="asistente-titulo">¿Qué se te antoja?</h2>
+            </div>
+            <button id="asistente-cerrar" class="assistant-close" type="button" aria-label="Cerrar recomendador">×</button>
+        </div>
+        <p>Cuéntame tus gustos y ocasión; te sugiero una opción del catálogo. Si la IA no está configurada, funcionan reglas locales.</p>
+        <form id="form-recomendador" class="assistant-form">
+            <label for="preferencia-sabor">Sabor</label>
+            <select id="preferencia-sabor" name="sabor" required>
+                <option value="cualquiera">Me gustan todos</option>
+                <option value="dulce">Dulce</option>
+                <option value="picante">Picante</option>
+                <option value="acido">Ácido</option>
+                <option value="refrescante">Refrescante</option>
+            </select>
+            <label for="preferencia-tamano">Tamaño</label>
+            <select id="preferencia-tamano" name="tamano" required>
+                <option value="cualquiera">Sorpréndeme</option>
+                <option value="pequeno">Pequeño</option>
+                <option value="mediano">Mediano</option>
+                <option value="grande">Grande</option>
+            </select>
+            <label for="preferencia-ocasion">¿Para qué ocasión?</label>
+            <select id="preferencia-ocasion" name="ocasion" required>
+                <option value="antojo">Un antojo</option>
+                <option value="celebracion">Una celebración</option>
+                <option value="compartir">Compartir</option>
+                <option value="regalo">Un regalo</option>
+                <option value="cualquiera">Cualquier momento</option>
+            </select>
+            <button class="contacto-button" type="submit">Recomiéndame una miche</button>
+        </form>
+        <div id="recomendacion-resultado" class="assistant-result" role="status" aria-live="polite"></div>
+    </section>
+    <button id="whatsapp-flotante" class="whatsapp-float" type="button" aria-label="Consultar por WhatsApp">
+        <span aria-hidden="true">◉</span> WhatsApp
+    </button>
 
     <script src="js/config.js"></script>
     <script src="js/menu.js"></script>

@@ -204,11 +204,17 @@ if (botonPedidoWhatsApp) {
 
         lineas.push(`Total estimado: ${window.MicheMango.formatCOP(total)}`);
         lineas.push("Este mensaje es una consulta de pedido; aún no se ha confirmado ninguna compra.");
-        if (window.MicheMango.whatsappIsExample) {
-            estadoPedido.textContent = "Aviso: el número de WhatsApp configurado es un ejemplo. Sustitúyelo en public/js/config.js antes de publicar.";
+        if (window.MicheMango.preciosConfirmados !== true) {
+            estadoPedido.textContent = "Aviso: los precios son demostrativos y deben confirmarse antes de enviar el pedido.";
             estadoPedido.className = "contacto-estado contacto-estado--error";
         }
-        window.open(window.MicheMango.whatsappUrl(lineas.join("\n")), "_blank", "noopener,noreferrer");
+        try {
+            const url = window.MicheMango.whatsappUrl(lineas.join("\n"));
+            window.open(url, "_blank", "noopener,noreferrer");
+        } catch (error) {
+            estadoPedido.textContent = error.message;
+            estadoPedido.className = "contacto-estado contacto-estado--error";
+        }
     });
 }
 
