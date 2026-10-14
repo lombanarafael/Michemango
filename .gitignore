@@ -2,6 +2,7 @@ node_modules/
 /src/data/solicitudes.json
 /src/data/solicitudes.*.tmp
 /src/data/productos.*.tmp
+/src/data/michemango.sqlite*
 .env
 .env.*
 !.env.example

@@ -1,53 +1,5 @@
-const fs = require("fs");
-const path = require("path");
 const { randomUUID } = require("crypto");
-const { pool } = require("./data/storage");
-
-const CARPETA_DATOS = path.join(__dirname, "data");
-const ARCHIVO_PRODUCTOS = path.join(CARPETA_DATOS, "productos.json");
-
-const productosIniciales = [
-  {
-    id: 1,
-    nombre: "Micheman",
-    categoria: "Clásicos",
-    precio: 15000,
-    descripcion: "Mango fresco, limón y chamoy: una combinación intensa y refrescante.",
-    imagen: "🥭",
-  },
-  {
-    id: 2,
-    nombre: "Miche Premium",
-    categoria: "Premium",
-    precio: 18000,
-    descripcion: "Mango con gomitas, tajín y frutas para una experiencia más completa.",
-    imagen: "✨",
-  },
-  {
-    id: 3,
-    nombre: "Mango Explosivo",
-    categoria: "Picante",
-    precio: 20000,
-    descripcion: "Mango, maracuyá, chamoy y tajín en una mezcla tropical, ácida y picante.",
-    imagen: "🌶️",
-  },
-  {
-    id: 4,
-    nombre: "Mini Miche",
-    categoria: "Pequeños",
-    precio: 10000,
-    descripcion: "Porción pequeña de mango, limón y chamoy para un antojo lleno de sabor.",
-    imagen: "🍋",
-  },
-];
-
-function crearArchivoProductosSiHaceFalta() {
-  fs.mkdirSync(CARPETA_DATOS, { recursive: true });
-
-  if (!fs.existsSync(ARCHIVO_PRODUCTOS)) {
-    fs.writeFileSync(ARCHIVO_PRODUCTOS, JSON.stringify(productosIniciales, null, 2), "utf8");
-  }
-}
+const { pool, sqlite } = require("./data/storage");
 
 async function leerProductos() {
   if (pool) {
@@ -59,30 +11,11 @@ async function leerProductos() {
     return resultado.rows.map((producto) => ({ ...producto, precio: Number(producto.precio) }));
   }
 
-  try {
-    crearArchivoProductosSiHaceFalta();
-    const contenido = fs.readFileSync(ARCHIVO_PRODUCTOS, "utf8");
-    const productos = JSON.parse(contenido);
-
-    if (!Array.isArray(productos)) {
-      throw new Error("El archivo de productos debe contener un arreglo JSON.");
-    }
-
-    return productos;
-  } catch (error) {
-    if (error && error.code === "ENOENT") {
-      return productosIniciales;
-    }
-
-    throw error;
-  }
-}
-
-function escribirProductos(productos) {
-  fs.mkdirSync(CARPETA_DATOS, { recursive: true });
-  const archivoTemporal = `${ARCHIVO_PRODUCTOS}.${process.pid}.tmp`;
-  fs.writeFileSync(archivoTemporal, JSON.stringify(productos, null, 2), "utf8");
-  fs.renameSync(archivoTemporal, ARCHIVO_PRODUCTOS);
+  return sqlite.prepare(
+    `SELECT id, nombre, categoria, precio, descripcion, imagen
+     FROM michemango_products
+     ORDER BY nombre`
+  ).all().map((producto) => ({ ...producto, precio: Number(producto.precio) }));
 }
 
 function normalizarProducto(producto, actual = null) {
@@ -150,9 +83,17 @@ async function crearProducto(producto) {
     return nuevoProducto;
   }
 
-  const productos = await leerProductos();
-  productos.push(nuevoProducto);
-  escribirProductos(productos);
+  sqlite.prepare(
+    `INSERT INTO michemango_products (id, nombre, categoria, precio, descripcion, imagen)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  ).run(
+    nuevoProducto.id,
+    nuevoProducto.nombre,
+    nuevoProducto.categoria,
+    nuevoProducto.precio,
+    nuevoProducto.descripcion,
+    nuevoProducto.imagen
+  );
   return nuevoProducto;
 }
 
@@ -186,8 +127,18 @@ async function actualizarProducto(id, producto) {
     return productoActualizado;
   }
 
-  productos[indice] = productoActualizado;
-  escribirProductos(productos);
+  sqlite.prepare(
+    `UPDATE michemango_products
+     SET nombre = ?, categoria = ?, precio = ?, descripcion = ?, imagen = ?
+     WHERE id = ?`
+  ).run(
+    productoActualizado.nombre,
+    productoActualizado.categoria,
+    productoActualizado.precio,
+    productoActualizado.descripcion,
+    productoActualizado.imagen,
+    String(id)
+  );
   return productoActualizado;
 }
 
@@ -197,20 +148,11 @@ async function eliminarProducto(id) {
     return resultado.rowCount > 0;
   }
 
-  const productos = await leerProductos();
-  const indice = productos.findIndex((elemento) => String(elemento.id) === String(id));
-
-  if (indice === -1) {
-    return false;
-  }
-
-  productos.splice(indice, 1);
-  escribirProductos(productos);
-  return true;
+  const resultado = sqlite.prepare("DELETE FROM michemango_products WHERE id = ?").run(String(id));
+  return resultado.changes > 0;
 }
 
 module.exports = {
-  productosIniciales,
   leerProductos,
   crearProducto,
   actualizarProducto,

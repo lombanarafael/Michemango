@@ -4,7 +4,7 @@ require("dotenv").config();
 // Importamos Express, las rutas y la fuente de datos del catálogo.
 const express = require("express");
 const { leerProductos } = require("./productos");
-const { pool, inicializarAlmacenamiento, modoAlmacenamiento } = require("./data/storage");
+const { pool, inicializarAlmacenamiento, cerrarAlmacenamiento, modoAlmacenamiento } = require("./data/storage");
 const contactoRouter = require("./routes/contacto");
 const adminRouter = require("./routes/admin");
 const adminAuthRouter = require("./routes/adminAuth");
@@ -241,12 +241,10 @@ if (require.main === module) {
             process.exitCode = 1;
           }
 
-          if (pool) {
-            pool.end().catch(() => {
-              console.error("No se pudo cerrar el pool de PostgreSQL correctamente.");
-              process.exitCode = 1;
-            });
-          }
+          cerrarAlmacenamiento().catch((closeError) => {
+            console.error("No se pudo cerrar el almacenamiento correctamente.", closeError.code || closeError.name);
+            process.exitCode = 1;
+          });
         });
       };
 
@@ -255,11 +253,9 @@ if (require.main === module) {
     })
     .catch((error) => {
       console.error("No se pudo iniciar MicheMango:", error.message);
-      if (pool) {
-        pool.end().catch((closeError) => {
-          console.error("No se pudo cerrar el pool de base de datos:", closeError.message);
-        });
-      }
+      cerrarAlmacenamiento().catch((closeError) => {
+        console.error("No se pudo cerrar el almacenamiento.", closeError.code || closeError.name);
+      });
       process.exitCode = 1;
     });
 }

@@ -1,12 +1,5 @@
-// Esta pequeña capa se encarga de guardar las solicitudes en un archivo JSON.
-const fs = require("fs");
-const path = require("path");
-const { pool } = require("./storage");
+const { pool, sqlite } = require("./storage");
 
-const CARPETA_DATOS = __dirname;
-const ARCHIVO_SOLICITUDES = path.join(CARPETA_DATOS, "solicitudes.json");
-
-// Leemos las solicitudes guardadas; si es la primera, comenzamos con una lista vacía.
 async function leerSolicitudes(estado = "") {
   if (pool) {
     const parametros = estado ? [estado] : [];
@@ -21,34 +14,17 @@ async function leerSolicitudes(estado = "") {
     return resultado.rows;
   }
 
-  try {
-    const contenido = fs.readFileSync(ARCHIVO_SOLICITUDES, "utf8");
-    const solicitudes = JSON.parse(contenido);
-
-    if (!Array.isArray(solicitudes)) {
-      throw new Error("El archivo de solicitudes debe contener una lista JSON.");
-    }
-
-    return estado ? solicitudes.filter((solicitud) => solicitud.estado === estado) : solicitudes;
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      return [];
-    }
-
-    throw error;
-  }
+  const filtro = estado ? "WHERE estado = ?" : "";
+  const parametros = estado ? [estado] : [];
+  return sqlite.prepare(
+    `SELECT id, fecha, nombre, correo, telefono, tipo, mensaje, estado,
+      producto_interes AS productoInteres
+     FROM michemango_requests
+     ${filtro}
+     ORDER BY fecha DESC`
+  ).all(...parametros);
 }
 
-// Escribimos los cambios de forma temporal antes de reemplazar el JSON principal.
-function escribirSolicitudes(solicitudes) {
-  fs.mkdirSync(CARPETA_DATOS, { recursive: true });
-
-  const archivoTemporal = `${ARCHIVO_SOLICITUDES}.${process.pid}.tmp`;
-  fs.writeFileSync(archivoTemporal, JSON.stringify(solicitudes, null, 2), "utf8");
-  fs.renameSync(archivoTemporal, ARCHIVO_SOLICITUDES);
-}
-
-// Agregamos una nueva solicitud sin perder las que ya estaban guardadas.
 async function guardarSolicitud(solicitud) {
   if (pool) {
     await pool.query(
@@ -70,12 +46,23 @@ async function guardarSolicitud(solicitud) {
     return;
   }
 
-  const solicitudes = await leerSolicitudes();
-  solicitudes.push(solicitud);
-  escribirSolicitudes(solicitudes);
+  sqlite.prepare(
+    `INSERT INTO michemango_requests
+      (id, fecha, nombre, correo, telefono, tipo, producto_interes, mensaje, estado)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    solicitud.id,
+    solicitud.fecha,
+    solicitud.nombre,
+    solicitud.correo,
+    solicitud.telefono,
+    solicitud.tipo,
+    solicitud.productoInteres,
+    solicitud.mensaje,
+    solicitud.estado
+  );
 }
 
-// Cambiamos el estado y devolvemos la solicitud, o null si no existe.
 async function actualizarEstadoSolicitud(id, estado) {
   if (pool) {
     const resultado = await pool.query(
@@ -88,35 +75,24 @@ async function actualizarEstadoSolicitud(id, estado) {
     return resultado.rows[0] || null;
   }
 
-  const solicitudes = await leerSolicitudes();
-  const solicitud = solicitudes.find((elemento) => elemento.id === id);
-
-  if (!solicitud) {
-    return null;
-  }
-
-  solicitud.estado = estado;
-  escribirSolicitudes(solicitudes);
-  return solicitud;
+  const actualizada = sqlite.prepare(
+    `UPDATE michemango_requests
+     SET estado = ?
+     WHERE id = ?
+     RETURNING id, fecha, nombre, correo, telefono, tipo, mensaje, estado,
+       producto_interes AS productoInteres`
+  ).get(estado, String(id));
+  return actualizada || null;
 }
 
-// Eliminamos una solicitud por su identificador y avisamos si no se encontró.
 async function eliminarSolicitud(id) {
   if (pool) {
     const resultado = await pool.query("DELETE FROM michemango_requests WHERE id = $1", [String(id)]);
     return resultado.rowCount > 0;
   }
 
-  const solicitudes = await leerSolicitudes();
-  const indice = solicitudes.findIndex((elemento) => elemento.id === id);
-
-  if (indice === -1) {
-    return false;
-  }
-
-  solicitudes.splice(indice, 1);
-  escribirSolicitudes(solicitudes);
-  return true;
+  const resultado = sqlite.prepare("DELETE FROM michemango_requests WHERE id = ?").run(String(id));
+  return resultado.changes > 0;
 }
 
 module.exports = {
