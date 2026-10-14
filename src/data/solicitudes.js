@@ -1,12 +1,22 @@
 // Esta pequeña capa se encarga de guardar las solicitudes en un archivo JSON.
 const fs = require("fs");
 const path = require("path");
+const { pool } = require("./storage");
 
 const CARPETA_DATOS = __dirname;
 const ARCHIVO_SOLICITUDES = path.join(CARPETA_DATOS, "solicitudes.json");
 
 // Leemos las solicitudes guardadas; si es la primera, comenzamos con una lista vacía.
-function leerSolicitudes() {
+async function leerSolicitudes() {
+  if (pool) {
+    const resultado = await pool.query(
+      `SELECT id, fecha, nombre, correo, telefono, tipo, mensaje, estado
+       FROM michemango_requests
+       ORDER BY fecha DESC`
+    );
+    return resultado.rows;
+  }
+
   try {
     const contenido = fs.readFileSync(ARCHIVO_SOLICITUDES, "utf8");
     const solicitudes = JSON.parse(contenido);
@@ -35,15 +45,44 @@ function escribirSolicitudes(solicitudes) {
 }
 
 // Agregamos una nueva solicitud sin perder las que ya estaban guardadas.
-function guardarSolicitud(solicitud) {
-  const solicitudes = leerSolicitudes();
+async function guardarSolicitud(solicitud) {
+  if (pool) {
+    await pool.query(
+      `INSERT INTO michemango_requests
+        (id, fecha, nombre, correo, telefono, tipo, mensaje, estado)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        solicitud.id,
+        solicitud.fecha,
+        solicitud.nombre,
+        solicitud.correo,
+        solicitud.telefono,
+        solicitud.tipo,
+        solicitud.mensaje,
+        solicitud.estado,
+      ]
+    );
+    return;
+  }
+
+  const solicitudes = await leerSolicitudes();
   solicitudes.push(solicitud);
   escribirSolicitudes(solicitudes);
 }
 
 // Cambiamos el estado y devolvemos la solicitud, o null si no existe.
-function actualizarEstadoSolicitud(id, estado) {
-  const solicitudes = leerSolicitudes();
+async function actualizarEstadoSolicitud(id, estado) {
+  if (pool) {
+    const resultado = await pool.query(
+      `UPDATE michemango_requests SET estado = $2
+       WHERE id = $1
+       RETURNING id, fecha, nombre, correo, telefono, tipo, mensaje, estado`,
+      [String(id), estado]
+    );
+    return resultado.rows[0] || null;
+  }
+
+  const solicitudes = await leerSolicitudes();
   const solicitud = solicitudes.find((elemento) => elemento.id === id);
 
   if (!solicitud) {
@@ -56,8 +95,13 @@ function actualizarEstadoSolicitud(id, estado) {
 }
 
 // Eliminamos una solicitud por su identificador y avisamos si no se encontró.
-function eliminarSolicitud(id) {
-  const solicitudes = leerSolicitudes();
+async function eliminarSolicitud(id) {
+  if (pool) {
+    const resultado = await pool.query("DELETE FROM michemango_requests WHERE id = $1", [String(id)]);
+    return resultado.rowCount > 0;
+  }
+
+  const solicitudes = await leerSolicitudes();
   const indice = solicitudes.findIndex((elemento) => elemento.id === id);
 
   if (indice === -1) {

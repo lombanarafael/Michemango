@@ -60,7 +60,7 @@ if (formularioRecomendador) {
         const presupuesto = formularioRecomendador.elements.presupuesto.value.trim();
         const maximo = presupuesto === "" ? Infinity : Number(presupuesto);
 
-        if (!Number.isFinite(maximo) && maximo !== Infinity || maximo < 0) {
+        if (presupuesto !== "" && (!Number.isFinite(maximo) || maximo < 0)) {
             formularioRecomendador.elements.presupuesto.setCustomValidity("Escribe un presupuesto válido.");
             formularioRecomendador.elements.presupuesto.reportValidity();
             return;

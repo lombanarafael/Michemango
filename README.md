@@ -1,137 +1,156 @@
 # MicheMango
 
-Aplicación web para presentar el emprendimiento MicheMango, consultar el catálogo, preparar pedidos para WhatsApp y registrar solicitudes de contacto. El frontend es estático y el backend Express gestiona los datos y protege el panel administrativo.
+Sitio de catálogo para el emprendimiento MicheMango. El frontend estático se publica en GitHub Pages; el servidor Express ofrece la API, recibe consultas y protege la administración.
 
-## Estructura
+## Estructura del proyecto
 
 ```text
-Michemango-main/
-├── public/
-│   ├── index.html
-│   ├── admin/
-│   │   ├── login.html
-│   │   └── panel.html
-│   ├── css/styles.css
-│   └── js/
-│       ├── config.js
-│       ├── menu.js
-│       ├── animaciones.js
-│       ├── catalogo.js
-│       ├── contacto.js
-│       ├── chatbot.js
-│       └── admin/
-│           ├── login.js
-│           └── panel.js
-├── src/
-│   ├── server.js
-│   ├── productos.js
-│   ├── routes/
-│   ├── middleware/
-│   ├── data/
-│   ├── prompts/       (no se usa; no hay funciones de IA)
-│   └── views/         (no se usa; las páginas estáticas están en public/admin)
-├── .github/workflows/pages.yml
-├── index.html
-├── netlify.toml     (configuración previa de publicación estática, opcional)
-├── package.json
-├── README.md
-└── .env.example
+public/
+  index.html
+  admin/{login.html,panel.html}
+  css/styles.css
+  js/{config.js,menu.js,animaciones.js,catalogo.js,contacto.js,chatbot.js}
+  js/admin/{login.js,panel.js}
+src/
+  server.js
+  productos.js
+  routes/{admin.js,adminApi.js,contacto.js}
+  middleware/requiereAdmin.js
+  data/{storage.js,productos.json,solicitudes.js}
+.github/workflows/pages.yml
+index.html
+package.json
+README.md
+.env.example
 ```
 
-`public/js/chatbot.js` conserva el nombre solicitado, pero **no es un chatbot**: contiene un recomendador determinista que puntúa los productos del catálogo según el sabor elegido y filtra por presupuesto. No conversa, no usa servicios de IA y no envía datos a una API de IA.
+`public/js/chatbot.js` es el nombre solicitado, pero implementa un recomendador determinista de productos basado en preferencias y presupuesto. No es una conversación ni una inteligencia artificial. `src/prompts/` y `src/views/` no se necesitan en la implementación actual; se mantienen vacías por si se añaden vistas o prompts en el futuro.
 
-Se conserva `netlify.toml` y `public/_redirects` como soporte opcional del despliegue estático previo en Netlify; la publicación principal documentada en este proyecto es GitHub Pages.
+## Requisitos y ejecución local
 
-## Requisitos
-
-- Node.js 18 o superior.
-- npm.
-
-## Ejecución local
-
-Desde la carpeta del proyecto, en PowerShell:
+Requiere Node.js 18 o superior y npm. En PowerShell, desde la raíz:
 
 ```powershell
 Copy-Item .env.example .env
 npm install
-```
-
-Configura en `.env` un hash bcrypt para el administrador y una clave de sesión aleatoria de al menos 32 caracteres. Para generar el hash:
-
-```powershell
 node -e "require('bcryptjs').hash('ELIGE_UNA_CONTRASENA_SEGURA', 12).then(console.log)"
 ```
 
-Pega el resultado en `ADMIN_PASSWORD_HASH`. Genera `SESSION_SECRET` con un valor aleatorio largo. No guardes la contraseña en `.env` ni publiques el archivo `.env`.
-
-Inicia el backend:
+Copia el hash resultante a `ADMIN_PASSWORD_HASH` en `.env`, configura `ADMIN_USERNAME` y reemplaza `SESSION_SECRET` por un valor aleatorio de al menos 32 caracteres. No pongas la contraseña en el archivo ni compartas `.env`. En desarrollo, `DATABASE_URL` puede dejarse vacío para usar los JSON locales.
 
 ```powershell
 npm start
 ```
 
-Abre `http://localhost:3000/`. Express sirve `public/` y la API desde el mismo origen. Para probar con Live Server, abre el `index.html` de la raíz o `public/index.html`; `config.js` usa el backend local en `http://localhost:3000`.
+La página local queda en `http://localhost:3000/`. La API local usa ese mismo servidor. Comprueba su estado en `http://localhost:3000/api/health`. Para usar Live Server, abre `public/index.html`; `config.js` reconoce `localhost` y `127.0.0.1` y conecta con el backend local.
 
-## Configuración editable del negocio
+`npm run check` verifica sintaxis del backend. `npm install` mantiene `package-lock.json` en sincronía.
 
-- `public/js/config.js`: configura `apiBasePublicada` con la URL pública del backend una vez desplegado. El número `573000000000` es un **ejemplo**; reemplázalo por el número de WhatsApp real antes de publicar. El sitio avisa que el teléfono todavía es de ejemplo.
-- `src/data/productos.json`: catálogo inicial de demostración; los nombres, descripciones y precios actuales son editables y no deben anunciarse como precios oficiales sin confirmación del negocio.
-- `.env.example`: plantilla de variables del backend, sin credenciales reales.
+## Configuración
+
+### API
+
+La URL del backend se configura una sola vez en `public/js/config.js`, variable `apiBasePublicada`. Déjala vacía en desarrollo. Después del despliegue, reemplázala por el origen HTTPS real del servicio, sin `/` final, por ejemplo `https://<tu-servicio>`. No se ha inventado ni configurado una URL pública.
+
+También se puede asignar `window.MICHEMANGO_API_URL` antes de cargar `config.js`; todos los módulos (`catalogo.js`, `contacto.js`, `admin/login.js` y `admin/panel.js`) llaman la API a través de la configuración central.
+
+### CORS
+
+En el backend, `CORS_ORIGINS` contiene una lista separada por comas de orígenes completos exactos, sin rutas ni comodines. En local, usa:
+
+```text
+http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000,http://127.0.0.1:3000
+```
+
+En producción, añade el origen real de Pages, por ejemplo `https://<usuario>.github.io`. El proyecto puede publicarse bajo `/<repositorio>/`, pero ese segmento no forma parte del origen. Si utilizas un dominio personalizado de Pages, configura ese dominio como origen en lugar del ejemplo. El backend valida la lista y rechaza orígenes no incluidos; nunca se habilita `*`.
+
+### WhatsApp y productos
+
+- En `public/js/config.js`, `whatsappNumber` (`573000000000`) es un **valor ficticio de ejemplo**, no el número del negocio. Sustitúyelo por el número internacional real, solo dígitos, y cambia `whatsappIsExample` a `false`.
+- `src/data/productos.json` contiene productos y precios de demostración. Confirma el catálogo y actualiza allí los precios iniciales antes de usarlo. Las ediciones posteriores del panel se escriben en el almacenamiento configurado.
 
 ## Catálogo y pedidos
 
-`GET /api/productos` entrega el catálogo almacenado en `src/data/productos.json`. El panel permite crear, editar y eliminar productos; esa misma API alimenta el catálogo público y el recomendador. Los filtros, subtotales y total del resumen se calculan en el navegador con los precios que entrega el backend.
+`GET /api/productos` entrega los productos vigentes. El catálogo y el recomendador usan esa respuesta, y el panel protegido permite agregar, editar y quitar productos. Las cantidades se validan (entero entre 1 y 99), los subtotales y el total se calculan a partir del precio del catálogo, y el resumen permite retirar líneas.
 
-El botón de WhatsApp abre un borrador que incluye productos, cantidades y total estimado. MicheMango no registra la compra ni confirma el pedido cuando se abre WhatsApp. Como el pedido no se almacena en el backend, no se recibe un precio desde el navegador para registrar una venta; si luego se añade registro de pedidos, el backend debe volver a calcular el importe usando los precios del catálogo.
+“Preparar pedido en WhatsApp” abre la aplicación o el sitio de WhatsApp con nombres, cantidades, subtotales y total estimado codificados en la URL. No registra la venta ni confirma que el mensaje se haya enviado. El número ficticio se advierte en pantalla. El pedido actualmente no se persiste en el servidor; si se implementa ese registro, el backend debe calcular de nuevo los subtotales usando sus propios precios, nunca los importes del navegador.
 
-## Formulario y datos
+El recomendador ofrece preferencias (dulce, ácido, picante o refrescante) y presupuesto máximo, puntuando términos en la descripción actual. Sus sugerencias son reglas programadas, no IA.
 
-`POST /api/contacto` valida en el servidor nombre, correo, teléfono opcional, tipo de solicitud y mensaje; luego guarda la solicitud en `src/data/solicitudes.json`. La respuesta incluye un identificador para comprobar que se registró. El archivo con datos personales está ignorado por Git.
+## Formulario y endpoints
 
-Los archivos JSON son un almacenamiento didáctico para desarrollo o una demostración pequeña, no una base de datos multiusuario. En producción hay que usar almacenamiento persistente (por ejemplo PostgreSQL administrado) o un volumen persistente del proveedor; en muchos servicios Node los archivos locales desaparecen al reiniciarse o redesplegar. `express-session` usa el almacén en memoria por defecto, de modo que las sesiones se cierran al reiniciar el proceso. Para producción con varias instancias se requiere un almacén de sesión persistente.
+`POST /api/contacto` valida nombre, correo, teléfono opcional, tipo y mensaje en el servidor. Tras guardar devuelve un código de seguimiento. El panel obtiene la solicitud guardada mediante `GET /api/admin/solicitudes` y permite cambiar su estado o eliminarla.
 
-## Panel administrativo
+Otros endpoints:
 
-1. Abre `public/admin/login.html` (en local: `http://localhost:3000/admin/login.html`).
-2. El servidor compara el usuario y el hash bcrypt configurados en `.env`.
-3. El navegador conserva una cookie `HttpOnly`; el backend revisa la sesión en cada ruta administrativa.
-4. `GET/POST/PATCH/DELETE /api/admin/productos` y `GET/PATCH/DELETE /api/admin/solicitudes` devuelven `401` si no hay una sesión autorizada.
+| Método | Ruta | Acceso |
+|---|---|---|
+| `GET` | `/api/health` | Público; informa estado y tipo de almacenamiento |
+| `GET` | `/api/productos` | Público |
+| `POST` | `/admin/login` | Público; credenciales comparadas con bcrypt |
+| `POST` | `/admin/logout` | Sesión administrativa |
+| `GET/POST/PATCH/DELETE` | `/api/admin/productos` | Sesión administrativa |
+| `GET/PATCH/DELETE` | `/api/admin/solicitudes` | Sesión administrativa |
 
-La vista puede descargarse como archivo estático, pero eso no da permisos: las operaciones de datos se bloquean en el backend. No incluyas contraseñas, hashes privados ni secretos en `public/`.
+Un visitante sin sesión recibe `401` al acceder a la API de administración. Las páginas administrativas son estáticas, así que se pueden abrir desde Pages, pero no exponen datos ni permiten cambios sin una sesión aceptada por el backend.
 
-## API y CORS
+## Almacenamiento y persistencia
 
-En desarrollo, `config.js` apunta a `http://localhost:3000`. Tras desplegar el backend, establece `apiBasePublicada` en `public/js/config.js`, por ejemplo `https://TU-SERVICIO.example.com` (sin `/` final).
+En desarrollo, si `DATABASE_URL` está vacío, productos y solicitudes se escriben en `src/data/productos.json` y `src/data/solicitudes.json`. Ese modo conserva datos entre reinicios locales, pero un archivo en disco de un alojamiento efímero **no es almacenamiento persistente garantizado**. Las solicitudes se excluyen de Git.
 
-Configura `CORS_ORIGINS` en las variables del servicio backend con el origen exacto del frontend, por ejemplo `https://TU_USUARIO.github.io`; no incluyas comodines ni una ruta como `/Michemango`. El valor debe coincidir con el origen del sitio que muestra el navegador. El servidor habilita credenciales para permitir la cookie de sesión entre orígenes. En producción la cookie es `Secure` y `SameSite=None`; algunos navegadores pueden bloquear cookies de terceros cuando GitHub Pages y el backend usan dominios distintos. Comprueba el login en los navegadores objetivo y, si ese límite causa problemas, aloja el frontend bajo el mismo dominio o adopta un mecanismo de autenticación adecuado a la plataforma.
+Para producción el servidor exige PostgreSQL mediante `DATABASE_URL`. Al arrancar crea las tablas de productos y solicitudes, importa catálogo/solicitudes JSON existentes solo si sus tablas de destino están vacías, y conserva los JSON originales como respaldo. La sesión administrativa también usa PostgreSQL (`michemango_sessions`) en vez del almacén volátil predeterminado. El primer inicio y la conexión real a la base deben verificarse antes de aceptar datos. Si el proveedor requiere TLS, configura `DATABASE_SSL=true`; usa el modo TLS que indique el proveedor.
 
-## Publicación
+No se necesita entregar la URL de la base dentro del repositorio. Cuando crees una instancia PostgreSQL, copia la cadena de conexión privada en la variable de entorno `DATABASE_URL` del servicio backend. Mantén `DATABASE_SSL=false` salvo que la configuración del proveedor solicite TLS.
 
-### Frontend en GitHub Pages
+## Administración y seguridad
 
-El workflow `.github/workflows/pages.yml` publica exclusivamente la carpeta `public/` cada vez que hay un push a `main`.
+Las credenciales están en variables privadas del backend: `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH` y `SESSION_SECRET`. El servidor no acepta contraseñas desde JavaScript salvo el envío del formulario de login sobre HTTPS; el hash no está en el frontend. La cookie de sesión es `HttpOnly`, `Secure` en producción y `SameSite=None` entre dominios, y las rutas revisan autorización en el servidor. `connect-pg-simple` conserva sesiones en PostgreSQL.
 
-1. Sube el repositorio a GitHub y conserva la rama `main`.
-2. En **Settings → Pages**, selecciona **GitHub Actions** como fuente.
-3. Sustituye `apiBasePublicada` en `public/js/config.js` por la URL HTTPS del backend desplegado y sube ese cambio.
-4. Revisa la ejecución de **Publicar frontend en GitHub Pages** en la pestaña **Actions**. El enlace solo debe compartirse cuando el flujo termine correctamente y el sitio responda.
+Como Pages y el backend suelen tener dominios distintos, algunos navegadores pueden bloquear cookies de terceros. Verifica el inicio de sesión desde la URL de Pages en el navegador objetivo; para producción fiable se recomienda un dominio propio con frontend y API en el mismo sitio o una solución de identidad apropiada a la plataforma. CORS por sí solo no sustituye autenticación ni autorización.
 
-### Backend Node.js
+## GitHub Pages
 
-Despliega el repositorio en un servicio que ejecute Node.js y configura el comando `npm start`. Define como variables de entorno `NODE_ENV=production`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET` (aleatorio, al menos 32 caracteres) y `CORS_ORIGINS` (origen exacto de Pages). No agregues estas variables al repositorio. Configura almacenamiento persistente para los JSON o migra a una base de datos administrada antes de depender de los datos reales.
+`.github/workflows/pages.yml` publica solo `public/` en cada push a `main` y al ejecutarse manualmente. `public/index.html` es la página de entrada. Los enlaces a estilos, scripts y secciones son relativos para que funcionen cuando el proyecto se sirve bajo `/<repositorio>/`. El `index.html` de la raíz solo es una redirección de conveniencia para Live Server y no forma parte del artefacto de Pages.
 
-El hosting de GitHub Pages **no ejecuta Express**. Publicar el frontend no publica automáticamente la API. Verifica ambas partes por separado: `GET <BACKEND>/api/productos`, un envío de prueba a `POST <BACKEND>/api/contacto`, y acceso a `https://TU_USUARIO.github.io/...`. No afirmes que se publicó ni que una solicitud quedó persistida hasta comprobarlo en el servicio.
+1. Sube el repositorio a GitHub.
+2. En **Settings → Pages**, elige **GitHub Actions** como origen.
+3. Crea y despliega el backend y la base de datos (siguientes instrucciones).
+4. Configura `apiBasePublicada` en `public/js/config.js` con la URL real HTTPS del backend y confirma el cambio en el repositorio.
+5. Configura en el backend `CORS_ORIGINS` con el origen real de Pages y revisa la ejecución del workflow en **Actions**.
+6. Comprueba la URL asignada por GitHub y carga el catálogo desde la API; la conexión no está lista hasta completar estas verificaciones.
 
-## Pruebas manuales sugeridas
+El workflow sube solamente `public/`; no publica `.env`, el código del backend ni los datos locales.
 
-1. Confirma que el catálogo carga y que cada filtro cambia los productos visibles.
-2. Cambia cantidades y verifica subtotal y total; agrega, quita y revisa productos en el resumen.
-3. Pulsa preparar pedido: debe abrir WhatsApp con el borrador y mostrar que el número es solo un ejemplo. No es una compra confirmada.
-4. Prueba el recomendador con varias preferencias y presupuestos; sus resultados deben pertenecer al catálogo vigente.
-5. Envía el formulario con datos válidos e inválidos; comprueba el identificador de respuesta y la entrada registrada en el panel.
-6. Intenta consultar `/api/admin/productos` sin sesión y confirma `401`; inicia sesión y prueba crear, editar y eliminar un producto.
-7. En el despliegue, confirma que una dirección de origen no incluida en `CORS_ORIGINS` no pueda usar la API.
+## Despliegue del backend
 
-## Inteligencia artificial
+Usa un servicio que ejecute Node.js/Express y PostgreSQL administrado. En el servicio Node configura el repositorio y la raíz del proyecto (la carpeta que contiene `package.json`), comando de inicio `npm start`, y estas variables privadas:
 
-Este alcance no incluye IA real. Si la guía exige específicamente inteligencia artificial, habrá que añadir una integración distinta, por ejemplo un servicio de modelo generativo llamado exclusivamente desde el backend (con clave privada en variables de entorno), o un modelo clasificador/recomendador desplegado en el servidor. Eso requiere definir proveedor, permisos, costos y protección de datos; no debe presentarse el recomendador actual como IA.
+```text
+NODE_ENV=production
+PORT=<lo proporciona la plataforma>
+ADMIN_USERNAME=<usuario que elijas>
+ADMIN_PASSWORD_HASH=<hash bcrypt generado localmente>
+SESSION_SECRET=<secreto aleatorio de 32 o más caracteres>
+DATABASE_URL=<cadena privada de PostgreSQL del proveedor>
+DATABASE_SSL=<true solo si el proveedor requiere TLS>
+CORS_ORIGINS=<origen exacto real de GitHub Pages>
+```
+
+El servidor escucha `process.env.PORT`. Despliega, verifica `GET https://<backend-real>/api/health`, y después `GET https://<backend-real>/api/productos`. No compartas ni subas el secreto, la cadena de base de datos o el hash de configuración. Los datos JSON existentes no se borran: la inicialización los copia solo si la tabla respectiva está vacía.
+
+No se ha desplegado ningún servicio externo ni se ha comprobado una URL pública. La creación de la cuenta, la base PostgreSQL y la entrada de sus credenciales privadas deben realizarse por el propietario.
+
+## Pruebas finales sugeridas
+
+1. `npm run check`; inicia `npm start`; revisa `/api/health` y `/api/productos`.
+2. En el sitio, filtra catálogo y recomendador, prueba varios presupuestos, cambia cantidades, agrega/elimina líneas y comprueba los importes.
+3. Con una herramienta de navegador, comprueba el enlace generado antes de contactar al número real.
+4. Envía un formulario válido y otro inválido; verifica el código de seguimiento y la solicitud en el panel.
+5. Sin sesión pide `/api/admin/productos` (debe responder `401`); entra al panel, crea/edita/elimina un registro de prueba y cierra sesión.
+6. Cuando haya backend y Pages públicos, prueba también el origen CORS correcto e incorrecto y que las cookies de sesión funcionen desde Pages.
+
+## Explicación para la sustentación
+
+GitHub Pages entrega los archivos estáticos de `public/` al navegador. `config.js` les proporciona la dirección del backend; el JavaScript de catálogo y contacto consume endpoints de Express. Las rutas validan datos y, en administración, exigen una sesión autenticada. En desarrollo Express guarda los datos en JSON locales; en producción, PostgreSQL conserva catálogo, solicitudes y sesiones entre reinicios. Git registra el código y el workflow automatiza el despliegue de los archivos públicos, pero no ejecuta Express.
+
+No se presenta IA real en el proyecto. Si el requisito escolar exige una, se debe agregar un modelo o proveedor real llamado desde el backend, proteger allí la clave y evaluar costos, permisos y privacidad; el recomendador actual no reemplaza ese requisito.

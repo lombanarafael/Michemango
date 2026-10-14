@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { randomUUID } = require("crypto");
+const { pool } = require("./data/storage");
 
 const CARPETA_DATOS = path.join(__dirname, "data");
 const ARCHIVO_PRODUCTOS = path.join(CARPETA_DATOS, "productos.json");
@@ -48,7 +49,16 @@ function crearArchivoProductosSiHaceFalta() {
   }
 }
 
-function leerProductos() {
+async function leerProductos() {
+  if (pool) {
+    const resultado = await pool.query(
+      `SELECT id, nombre, categoria, precio, descripcion, imagen
+       FROM michemango_products
+       ORDER BY nombre`
+    );
+    return resultado.rows.map((producto) => ({ ...producto, precio: Number(producto.precio) }));
+  }
+
   try {
     crearArchivoProductosSiHaceFalta();
     const contenido = fs.readFileSync(ARCHIVO_PRODUCTOS, "utf8");
@@ -118,20 +128,36 @@ function normalizarProducto(producto, actual = null) {
   return { nombre, categoria, precio, descripcion, imagen: imagen || "🥭" };
 }
 
-function crearProducto(producto) {
-  const productos = leerProductos();
+async function crearProducto(producto) {
   const nuevoProducto = {
     id: randomUUID(),
     ...normalizarProducto(producto),
   };
 
+  if (pool) {
+    await pool.query(
+      `INSERT INTO michemango_products (id, nombre, categoria, precio, descripcion, imagen)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        nuevoProducto.id,
+        nuevoProducto.nombre,
+        nuevoProducto.categoria,
+        nuevoProducto.precio,
+        nuevoProducto.descripcion,
+        nuevoProducto.imagen,
+      ]
+    );
+    return nuevoProducto;
+  }
+
+  const productos = await leerProductos();
   productos.push(nuevoProducto);
   escribirProductos(productos);
   return nuevoProducto;
 }
 
-function actualizarProducto(id, producto) {
-  const productos = leerProductos();
+async function actualizarProducto(id, producto) {
+  const productos = await leerProductos();
   const indice = productos.findIndex((elemento) => String(elemento.id) === String(id));
 
   if (indice === -1) {
@@ -143,13 +169,35 @@ function actualizarProducto(id, producto) {
     ...normalizarProducto(producto, productos[indice]),
   };
 
+  if (pool) {
+    await pool.query(
+      `UPDATE michemango_products
+       SET nombre = $2, categoria = $3, precio = $4, descripcion = $5, imagen = $6
+       WHERE id = $1`,
+      [
+        String(id),
+        productoActualizado.nombre,
+        productoActualizado.categoria,
+        productoActualizado.precio,
+        productoActualizado.descripcion,
+        productoActualizado.imagen,
+      ]
+    );
+    return productoActualizado;
+  }
+
   productos[indice] = productoActualizado;
   escribirProductos(productos);
   return productoActualizado;
 }
 
-function eliminarProducto(id) {
-  const productos = leerProductos();
+async function eliminarProducto(id) {
+  if (pool) {
+    const resultado = await pool.query("DELETE FROM michemango_products WHERE id = $1", [String(id)]);
+    return resultado.rowCount > 0;
+  }
+
+  const productos = await leerProductos();
   const indice = productos.findIndex((elemento) => String(elemento.id) === String(id));
 
   if (indice === -1) {

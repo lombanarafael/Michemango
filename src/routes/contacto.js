@@ -25,7 +25,7 @@ function esTelefonoValido(telefono) {
 }
 
 // Comprobamos la información en el servidor: las validaciones del navegador no bastan.
-router.post("/contacto", (req, res) => {
+router.post("/contacto", async (req, res) => {
   const cuerpo = req.body;
 
   if (!cuerpo || typeof cuerpo !== "object" || Array.isArray(cuerpo)) {
@@ -89,7 +89,7 @@ router.post("/contacto", (req, res) => {
   };
 
   try {
-    guardarSolicitud(solicitud);
+    await guardarSolicitud(solicitud);
   } catch (error) {
     console.error("No se pudo guardar la solicitud de contacto:", error);
     return res.status(500).json({

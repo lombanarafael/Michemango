@@ -21,19 +21,19 @@ router.use(requiereAdminApi);
 router.use(express.json({ limit: "10kb" }));
 
 // Entregamos al panel la lista de solicitudes guardadas.
-router.get("/solicitudes", (req, res) => {
-  res.json(leerSolicitudes());
+router.get("/solicitudes", async (req, res) => {
+  res.json(await leerSolicitudes());
 });
 
 // Permitimos cambiar únicamente a los estados definidos para esta etapa.
-router.patch("/solicitudes/:id/estado", (req, res) => {
+router.patch("/solicitudes/:id/estado", async (req, res) => {
   const estado = req.body && req.body.estado;
 
   if (!ESTADOS_PERMITIDOS.includes(estado)) {
     return res.status(400).json({ error: "El estado debe ser nueva o atendida." });
   }
 
-  const solicitud = actualizarEstadoSolicitud(req.params.id, estado);
+  const solicitud = await actualizarEstadoSolicitud(req.params.id, estado);
 
   if (!solicitud) {
     return res.status(404).json({ error: "No encontramos esa solicitud." });
@@ -43,8 +43,8 @@ router.patch("/solicitudes/:id/estado", (req, res) => {
 });
 
 // Eliminamos una solicitud solo después de que el panel pida expresamente hacerlo.
-router.delete("/solicitudes/:id", (req, res) => {
-  const eliminada = eliminarSolicitud(req.params.id);
+router.delete("/solicitudes/:id", async (req, res) => {
+  const eliminada = await eliminarSolicitud(req.params.id);
 
   if (!eliminada) {
     return res.status(404).json({ error: "No encontramos esa solicitud." });
@@ -53,11 +53,11 @@ router.delete("/solicitudes/:id", (req, res) => {
   return res.json({ mensaje: "Solicitud eliminada." });
 });
 
-router.get("/productos", (req, res) => {
-  res.json(leerProductos());
+router.get("/productos", async (req, res) => {
+  res.json(await leerProductos());
 });
 
-router.post("/productos", (req, res) => {
+router.post("/productos", async (req, res) => {
   const cuerpo = req.body;
 
   if (!cuerpo || typeof cuerpo !== "object" || Array.isArray(cuerpo)) {
@@ -65,7 +65,7 @@ router.post("/productos", (req, res) => {
   }
 
   try {
-    const producto = crearProducto(cuerpo);
+    const producto = await crearProducto(cuerpo);
     return res.status(201).json({ mensaje: "Producto creado.", producto });
   } catch (error) {
     if (error.code !== "INVALID_PRODUCT") {
@@ -76,7 +76,7 @@ router.post("/productos", (req, res) => {
   }
 });
 
-router.patch("/productos/:id", (req, res) => {
+router.patch("/productos/:id", async (req, res) => {
   const cuerpo = req.body;
 
   if (!cuerpo || typeof cuerpo !== "object" || Array.isArray(cuerpo)) {
@@ -84,7 +84,7 @@ router.patch("/productos/:id", (req, res) => {
   }
 
   try {
-    const producto = actualizarProducto(req.params.id, cuerpo);
+    const producto = await actualizarProducto(req.params.id, cuerpo);
 
     if (!producto) {
       return res.status(404).json({ error: "No encontramos ese producto." });
@@ -100,8 +100,8 @@ router.patch("/productos/:id", (req, res) => {
   }
 });
 
-router.delete("/productos/:id", (req, res) => {
-  const eliminado = eliminarProducto(req.params.id);
+router.delete("/productos/:id", async (req, res) => {
+  const eliminado = await eliminarProducto(req.params.id);
 
   if (!eliminado) {
     return res.status(404).json({ error: "No encontramos ese producto." });

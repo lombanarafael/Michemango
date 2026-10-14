@@ -19,7 +19,7 @@ function actualizarSubtotalTarjeta(producto, campoCantidad, subtotal) {
     const valida = Number.isInteger(cantidad) && cantidad > 0 && cantidad <= 99;
     campoCantidad.setCustomValidity(valida ? "" : "Ingresa una cantidad entre 1 y 99.");
     subtotal.textContent = valida
-        ? window.MicheMango.formatCOP(cantidad * producto.precio)
+        ? `Subtotal: ${window.MicheMango.formatCOP(cantidad * producto.precio)}`
         : "Cantidad no válida";
     return valida ? cantidad : null;
 }
@@ -116,7 +116,6 @@ function renderizarProductos(productos, categoriaActiva = "Todas") {
         const resumenSubtotal = crearElemento("p", "subtotal-producto", `Subtotal: ${window.MicheMango.formatCOP(producto.precio)}`);
         cantidad.addEventListener("input", () => {
             const valor = actualizarSubtotalTarjeta(producto, cantidad, resumenSubtotal);
-            resumenSubtotal.textContent = `Subtotal: ${resumenSubtotal.textContent}`;
             if (valor === null) {
                 resumenSubtotal.classList.add("subtotal-invalido");
             } else {

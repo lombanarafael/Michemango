@@ -4,7 +4,8 @@
   "description": "MicheMango es una página web creada para promocionar y vender miche de mango. Su objetivo es ofrecer a los clientes una forma sencilla de conocer los productos, los precios y la información del emprendimiento.",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "check": "node --check src/server.js && node --check src/productos.js && node --check src/data/storage.js && node --check src/data/solicitudes.js && node --check src/middleware/requiereAdmin.js && node --check src/routes/contacto.js && node --check src/routes/adminApi.js && node --check src/routes/admin.js"
   },
   "repository": {
     "type": "git",
@@ -19,8 +20,10 @@
   "homepage": "https://github.com/lombanarafael/Michemango#readme",
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "connect-pg-simple": "^10.0.0",
     "dotenv": "^18.0.7",
     "express": "^5.3.0",
-    "express-session": "^1.19.0"
+    "express-session": "^1.19.0",
+    "pg": "^8.23.1"
   }
 }
