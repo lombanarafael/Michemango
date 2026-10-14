@@ -7,12 +7,16 @@ const CARPETA_DATOS = __dirname;
 const ARCHIVO_SOLICITUDES = path.join(CARPETA_DATOS, "solicitudes.json");
 
 // Leemos las solicitudes guardadas; si es la primera, comenzamos con una lista vacía.
-async function leerSolicitudes() {
+async function leerSolicitudes(estado = "") {
   if (pool) {
+    const parametros = estado ? [estado] : [];
     const resultado = await pool.query(
-      `SELECT id, fecha, nombre, correo, telefono, tipo, mensaje, estado
+      `SELECT id, fecha, nombre, correo, telefono, tipo, mensaje, estado,
+       producto_interes AS "productoInteres"
        FROM michemango_requests
-       ORDER BY fecha DESC`
+       ${estado ? "WHERE estado = $1" : ""}
+       ORDER BY fecha DESC`,
+      parametros
     );
     return resultado.rows;
   }
@@ -25,7 +29,7 @@ async function leerSolicitudes() {
       throw new Error("El archivo de solicitudes debe contener una lista JSON.");
     }
 
-    return solicitudes;
+    return estado ? solicitudes.filter((solicitud) => solicitud.estado === estado) : solicitudes;
   } catch (error) {
     if (error.code === "ENOENT") {
       return [];
@@ -49,8 +53,8 @@ async function guardarSolicitud(solicitud) {
   if (pool) {
     await pool.query(
       `INSERT INTO michemango_requests
-        (id, fecha, nombre, correo, telefono, tipo, mensaje, estado)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        (id, fecha, nombre, correo, telefono, tipo, producto_interes, mensaje, estado)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
         solicitud.id,
         solicitud.fecha,
@@ -58,6 +62,7 @@ async function guardarSolicitud(solicitud) {
         solicitud.correo,
         solicitud.telefono,
         solicitud.tipo,
+        solicitud.productoInteres,
         solicitud.mensaje,
         solicitud.estado,
       ]
@@ -76,7 +81,8 @@ async function actualizarEstadoSolicitud(id, estado) {
     const resultado = await pool.query(
       `UPDATE michemango_requests SET estado = $2
        WHERE id = $1
-       RETURNING id, fecha, nombre, correo, telefono, tipo, mensaje, estado`,
+       RETURNING id, fecha, nombre, correo, telefono, tipo, mensaje, estado,
+         producto_interes AS "productoInteres"`,
       [String(id), estado]
     );
     return resultado.rows[0] || null;

@@ -67,8 +67,9 @@ async function inicializarAlmacenamiento() {
       correo VARCHAR(120),
       telefono VARCHAR(25),
       tipo VARCHAR(32) NOT NULL,
+      producto_interes VARCHAR(80),
       mensaje VARCHAR(1000) NOT NULL,
-      estado VARCHAR(16) NOT NULL CHECK (estado IN ('nueva', 'atendida'))
+      estado VARCHAR(16) NOT NULL CHECK (estado IN ('nueva', 'confirmada', 'atendida'))
     );
     CREATE INDEX IF NOT EXISTS michemango_requests_fecha_idx
       ON michemango_requests (fecha DESC);
@@ -76,6 +77,13 @@ async function inicializarAlmacenamiento() {
       migration_name TEXT PRIMARY KEY,
       completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `);
+  await pool.query("ALTER TABLE michemango_requests ADD COLUMN IF NOT EXISTS producto_interes VARCHAR(80)");
+  await pool.query("ALTER TABLE michemango_requests DROP CONSTRAINT IF EXISTS michemango_requests_estado_check");
+  await pool.query(`
+    ALTER TABLE michemango_requests
+    ADD CONSTRAINT michemango_requests_estado_check
+    CHECK (estado IN ('nueva', 'confirmada', 'atendida'))
   `);
 
   const productos = leerJson(PRODUCTOS_JSON, []);
@@ -114,8 +122,8 @@ async function inicializarAlmacenamiento() {
         for (const solicitud of solicitudes) {
           await client.query(
             `INSERT INTO michemango_requests
-              (id, fecha, nombre, correo, telefono, tipo, mensaje, estado)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+              (id, fecha, nombre, correo, telefono, tipo, producto_interes, mensaje, estado)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
              ON CONFLICT (id) DO NOTHING`,
             [
               String(solicitud.id),
@@ -124,8 +132,9 @@ async function inicializarAlmacenamiento() {
               solicitud.correo || null,
               solicitud.telefono || null,
               solicitud.tipo,
+              solicitud.productoInteres || null,
               solicitud.mensaje,
-              solicitud.estado === "atendida" ? "atendida" : "nueva",
+              ["nueva", "confirmada", "atendida"].includes(solicitud.estado) ? solicitud.estado : "nueva",
             ]
           );
         }

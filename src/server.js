@@ -7,10 +7,14 @@ const { leerProductos } = require("./productos");
 const { pool, inicializarAlmacenamiento, modoAlmacenamiento } = require("./data/storage");
 const contactoRouter = require("./routes/contacto");
 const adminRouter = require("./routes/admin");
+const adminAuthRouter = require("./routes/adminAuth");
 const adminApiRouter = require("./routes/adminApi");
+const recomendadorRouter = require("./routes/recomendador");
+const helmet = require("helmet");
 const path = require("path");
 const session = require("express-session");
 const connectPgSimple = require("connect-pg-simple");
+const requestLogger = require("./middleware/requestLogger");
 
 // Creamos la aplicación y ubicamos la carpeta pública del sitio.
 const app = express();
@@ -18,6 +22,7 @@ const PUERTO = process.env.PORT || 3000;
 const CARPETA_PUBLICA = path.join(__dirname, "..", "public");
 const origenesPermitidos = new Set();
 const origenesConfigurados = (
+  process.env.FRONTEND_ORIGIN ||
   process.env.CORS_ORIGINS ||
   "http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000,http://127.0.0.1:3000"
 )
@@ -26,8 +31,8 @@ const origenesConfigurados = (
   .filter(Boolean);
 
 // Evitamos iniciar el panel con credenciales o secreto de sesión sin configurar.
-if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD_HASH) {
-  throw new Error("Configura ADMIN_USERNAME y ADMIN_PASSWORD_HASH en el archivo .env.");
+if (!(process.env.ADMIN_USERNAME || process.env.ADMIN_USER) || !process.env.ADMIN_PASSWORD_HASH) {
+  throw new Error("Configura ADMIN_USER (o ADMIN_USERNAME) y ADMIN_PASSWORD_HASH en el entorno.");
 }
 
 if (!/^\$2[aby]\$\d{2}\$/.test(process.env.ADMIN_PASSWORD_HASH)) {
@@ -39,7 +44,9 @@ if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
 }
 
 if (process.env.NODE_ENV === "production" && !process.env.CORS_ORIGINS) {
-  throw new Error("Configura CORS_ORIGINS con el origen público del frontend en producción.");
+  if (!process.env.FRONTEND_ORIGIN) {
+    throw new Error("Configura FRONTEND_ORIGIN con el origen público del frontend en producción.");
+  }
 }
 
 if (process.env.NODE_ENV === "production" && !process.env.DATABASE_URL) {
@@ -67,7 +74,15 @@ origenesConfigurados.forEach((origen) => {
 });
 
 if (process.env.NODE_ENV === "production" && origenesPermitidos.size === 0) {
-  throw new Error("CORS_ORIGINS debe incluir al menos un origen HTTPS permitido en producción.");
+  throw new Error("FRONTEND_ORIGIN debe contener un origen HTTPS permitido en producción.");
+}
+
+const sameSite = process.env.SESSION_SAME_SITE || (process.env.NODE_ENV === "production" ? "none" : "lax");
+if (!["lax", "strict", "none"].includes(sameSite)) {
+  throw new Error("SESSION_SAME_SITE debe ser lax, strict o none.");
+}
+if (sameSite === "none" && process.env.NODE_ENV === "production" && process.env.SESSION_SECURE === "false") {
+  throw new Error("SESSION_SECURE=true es obligatorio con SameSite=None en producción.");
 }
 
 // Si hay un proxy HTTPS al desplegar, Express podrá reconocer la conexión segura.
@@ -83,11 +98,15 @@ const sessionOptions = {
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite,
+    secure: process.env.NODE_ENV === "production" && process.env.SESSION_SECURE !== "false",
+    path: "/",
     maxAge: 60 * 60 * 1000,
   },
 };
+if (process.env.SESSION_COOKIE_DOMAIN) {
+  sessionOptions.cookie.domain = process.env.SESSION_COOKIE_DOMAIN;
+}
 
 if (pool) {
   sessionOptions.store = new PgSessionStore({
@@ -98,9 +117,17 @@ if (pool) {
 }
 
 // Creamos sesiones antes de las rutas que comprueban si el usuario inició sesión.
-app.use(
-  session(sessionOptions)
-);
+app.use(requestLogger);
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      connectSrc: ["'self'", ...origenesPermitidos],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+    },
+  },
+}));
+app.use(session(sessionOptions));
 
 // Solo permitimos solicitudes desde el sitio configurado y orígenes locales de desarrollo.
 app.use((req, res, next) => {
@@ -135,6 +162,8 @@ app.use(express.json({ limit: "10kb" }));
 
 // Conectamos las rutas del formulario, acceso y administración.
 app.use("/api", contactoRouter);
+app.use("/api", recomendadorRouter);
+app.use("/api/admin", adminAuthRouter);
 app.use("/admin", adminRouter);
 app.use("/api/admin", adminApiRouter);
 
@@ -176,8 +205,18 @@ app.use((error, req, res, next) => {
     return res.status(413).json({ error: "Los datos enviados superan el tamaño permitido." });
   }
 
-  console.error("Error inesperado del servidor:", error);
-  return res.status(500).json({ error: "Ocurrió un error inesperado en el servidor." });
+  console.error(JSON.stringify({
+    requestId: req.requestId,
+    event: "request_error",
+    code: error.code || "INTERNAL_ERROR",
+    name: error.name || "Error",
+  }));
+  return res.status(error.status >= 400 && error.status < 500 ? error.status : 500).json({
+    error: error.status >= 400 && error.status < 500
+      ? "No se pudo procesar la solicitud."
+      : "Ocurrió un error inesperado en el servidor.",
+    requestId: req.requestId,
+  });
 });
 
 // Al iniciar este archivo directamente, dejamos al servidor escuchando en el puerto.

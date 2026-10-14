@@ -5,7 +5,8 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "check": "node --check src/server.js && node --check src/productos.js && node --check src/data/storage.js && node --check src/data/solicitudes.js && node --check src/middleware/requiereAdmin.js && node --check src/routes/contacto.js && node --check src/routes/adminApi.js && node --check src/routes/admin.js"
+    "dev": "node --watch src/server.js",
+    "check": "node --check src/server.js && node --check src/productos.js && node --check src/data/storage.js && node --check src/data/solicitudes.js && node --check src/middleware/requiereAdmin.js && node --check src/middleware/rateLimiters.js && node --check src/middleware/requestLogger.js && node --check src/routes/contacto.js && node --check src/routes/adminApi.js && node --check src/routes/adminAuth.js && node --check src/routes/recomendador.js && node --check src/routes/admin.js && node --check public/js/config.js && node --check public/js/menu.js && node --check public/js/animaciones.js && node --check public/js/catalogo.js && node --check public/js/contacto.js && node --check public/js/chatbot.js && node --check public/js/admin/login.js && node --check public/js/admin/panel.js"
   },
   "repository": {
     "type": "git",
@@ -23,7 +24,9 @@
     "connect-pg-simple": "^10.0.0",
     "dotenv": "^18.0.7",
     "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
     "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
     "pg": "^8.23.1"
   }
 }

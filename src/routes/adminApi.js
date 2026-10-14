@@ -14,7 +14,7 @@ const {
 } = require("../productos");
 
 const router = express.Router();
-const ESTADOS_PERMITIDOS = ["nueva", "atendida"];
+const ESTADOS_PERMITIDOS = ["nueva", "confirmada", "atendida"];
 
 // Bloqueamos todas las rutas de esta API si la sesión no está iniciada.
 router.use(requiereAdminApi);
@@ -22,7 +22,11 @@ router.use(express.json({ limit: "10kb" }));
 
 // Entregamos al panel la lista de solicitudes guardadas.
 router.get("/solicitudes", async (req, res) => {
-  res.json(await leerSolicitudes());
+  const estado = typeof req.query.estado === "string" ? req.query.estado : "";
+  if (estado && !ESTADOS_PERMITIDOS.includes(estado)) {
+    return res.status(400).json({ error: "El filtro debe ser nueva, confirmada o atendida." });
+  }
+  res.json(await leerSolicitudes(estado));
 });
 
 // Permitimos cambiar únicamente a los estados definidos para esta etapa.
@@ -30,7 +34,7 @@ router.patch("/solicitudes/:id/estado", async (req, res) => {
   const estado = req.body && req.body.estado;
 
   if (!ESTADOS_PERMITIDOS.includes(estado)) {
-    return res.status(400).json({ error: "El estado debe ser nueva o atendida." });
+    return res.status(400).json({ error: "El estado debe ser nueva, confirmada o atendida." });
   }
 
   const solicitud = await actualizarEstadoSolicitud(req.params.id, estado);
@@ -69,7 +73,7 @@ router.post("/productos", async (req, res) => {
     return res.status(201).json({ mensaje: "Producto creado.", producto });
   } catch (error) {
     if (error.code !== "INVALID_PRODUCT") {
-      console.error("No se pudo guardar el producto:", error);
+      console.error("No se pudo guardar el producto.", error.code || error.name);
       return res.status(500).json({ error: "No se pudo guardar el producto en el servidor." });
     }
     return res.status(400).json({ error: error.message });
@@ -93,7 +97,7 @@ router.patch("/productos/:id", async (req, res) => {
     return res.json({ mensaje: "Producto actualizado.", producto });
   } catch (error) {
     if (error.code !== "INVALID_PRODUCT") {
-      console.error("No se pudo actualizar el producto:", error);
+      console.error("No se pudo actualizar el producto.", error.code || error.name);
       return res.status(500).json({ error: "No se pudo actualizar el producto en el servidor." });
     }
     return res.status(400).json({ error: error.message });

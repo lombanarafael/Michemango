@@ -2,6 +2,8 @@
 const express = require("express");
 const { randomUUID } = require("crypto");
 const { guardarSolicitud } = require("../data/solicitudes");
+const { leerProductos } = require("../productos");
+const { limitarSolicitudes } = require("../middleware/rateLimiters");
 
 const router = express.Router();
 const TIPOS_PERMITIDOS = ["pedido", "cotizacion_evento", "duda"];
@@ -9,6 +11,12 @@ const MAXIMO_NOMBRE = 80;
 const MAXIMO_CORREO = 120;
 const MAXIMO_TELEFONO = 25;
 const MAXIMO_MENSAJE = 1000;
+
+function limpiarTexto(valor) {
+  return typeof valor === "string"
+    ? valor.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim()
+    : "";
+}
 
 // Aceptamos teléfonos en formatos comunes y comprobamos su cantidad de dígitos.
 function esTelefonoValido(telefono) {
@@ -25,18 +33,19 @@ function esTelefonoValido(telefono) {
 }
 
 // Comprobamos la información en el servidor: las validaciones del navegador no bastan.
-router.post("/contacto", async (req, res) => {
+router.post(["/contacto", "/solicitudes"], limitarSolicitudes, async (req, res) => {
   const cuerpo = req.body;
 
   if (!cuerpo || typeof cuerpo !== "object" || Array.isArray(cuerpo)) {
     return res.status(400).json({ error: "Envía los datos del formulario en formato válido." });
   }
 
-  const nombre = typeof cuerpo.nombre === "string" ? cuerpo.nombre.trim() : "";
-  const correo = typeof cuerpo.correo === "string" ? cuerpo.correo.trim().toLowerCase() : "";
-  const telefono = typeof cuerpo.telefono === "string" ? cuerpo.telefono.trim() : "";
-  const mensaje = typeof cuerpo.mensaje === "string" ? cuerpo.mensaje.trim() : "";
+  const nombre = limpiarTexto(cuerpo.nombre);
+  const correo = limpiarTexto(cuerpo.correo).toLowerCase();
+  const telefono = limpiarTexto(cuerpo.telefono);
+  const mensaje = limpiarTexto(cuerpo.mensaje);
   const tipo = typeof cuerpo.tipo === "string" ? cuerpo.tipo : "";
+  const productoInteres = limpiarTexto(cuerpo.productoInteres);
 
   if (
     cuerpo.telefono !== undefined &&
@@ -46,17 +55,28 @@ router.post("/contacto", async (req, res) => {
     return res.status(400).json({ error: "El teléfono debe ser texto o quedar vacío." });
   }
 
+  if (
+    cuerpo.correo !== undefined &&
+    cuerpo.correo !== null &&
+    typeof cuerpo.correo !== "string"
+  ) {
+    return res.status(400).json({ error: "El correo debe ser texto o quedar vacío." });
+  }
+
   if (!nombre || nombre.length > MAXIMO_NOMBRE) {
     return res.status(400).json({
       error: `Escribe tu nombre (máximo ${MAXIMO_NOMBRE} caracteres).`,
     });
   }
 
-  if (
-    !correo ||
+  if (!correo && !telefono) {
+    return res.status(400).json({ error: "Escribe un teléfono o correo para poder contactarte." });
+  }
+
+  if (correo && (
     correo.length > MAXIMO_CORREO ||
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)
-  ) {
+  )) {
     return res.status(400).json({ error: "Escribe un correo electrónico válido." });
   }
 
@@ -76,35 +96,46 @@ router.post("/contacto", async (req, res) => {
     return res.status(400).json({ error: "Selecciona un tipo de solicitud válido." });
   }
 
-  // Guardamos una copia limpia con identificador, fecha y estado inicial.
-  const solicitud = {
-    id: randomUUID(),
-    fecha: new Date().toISOString(),
-    nombre,
-    correo,
-    telefono: telefono || null,
-    tipo,
-    mensaje,
-    estado: "nueva",
-  };
-
   try {
+    if (!productoInteres || productoInteres.length > 80) {
+      return res.status(400).json({ error: "Selecciona el producto que te interesa." });
+    }
+
+    const productos = await leerProductos();
+    const productoCoincidente = productos.find(
+      (producto) => producto.nombre.toLocaleLowerCase("es-CO") === productoInteres.toLocaleLowerCase("es-CO")
+    );
+    if (!productoCoincidente) {
+      return res.status(400).json({ error: "Selecciona un producto disponible del catálogo." });
+    }
+
+    const solicitud = {
+      id: randomUUID(),
+      fecha: new Date().toISOString(),
+      nombre,
+      correo: correo || null,
+      telefono: telefono || null,
+      tipo,
+      productoInteres: productoCoincidente.nombre,
+      mensaje,
+      estado: "nueva",
+    };
+
     await guardarSolicitud(solicitud);
+    return res.status(201).json({
+      mensaje: "¡Gracias! Registramos tu solicitud y nos pondremos en contacto contigo.",
+      solicitud: {
+        id: solicitud.id,
+        fecha: solicitud.fecha,
+        estado: solicitud.estado,
+      },
+    });
   } catch (error) {
-    console.error("No se pudo guardar la solicitud de contacto:", error);
+    console.error("No se pudo registrar la solicitud.", error.code || error.name);
     return res.status(500).json({
       error: "No pudimos guardar tu mensaje en este momento. Inténtalo más tarde.",
     });
   }
-
-  return res.status(201).json({
-    mensaje: "¡Gracias por escribirnos! Recibimos tu solicitud y pronto nos comunicaremos contigo.",
-    solicitud: {
-      id: solicitud.id,
-      fecha: solicitud.fecha,
-      estado: solicitud.estado,
-    },
-  });
 });
 
 module.exports = router;
