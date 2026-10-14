@@ -29,7 +29,9 @@ if (formularioLogin) {
 
             window.location.assign("panel.html");
         } catch (error) {
-            mensajeLogin.textContent = error.message || "No pudimos conectar con el backend. Comprueba la URL de la API.";
+            mensajeLogin.textContent = error instanceof TypeError
+                ? "No pudimos iniciar sesión en este momento. Inténtalo de nuevo."
+                : error.message || "No pudimos iniciar sesión en este momento. Inténtalo de nuevo.";
             mensajeLogin.classList.add("contacto-estado--error");
         } finally {
             boton.disabled = false;

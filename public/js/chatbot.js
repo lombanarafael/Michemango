@@ -74,7 +74,9 @@ formularioAsistente?.addEventListener("submit", async (evento) => {
         resultadoAsistente.append(etiquetaModo, nombre, motivo, precio, aviso, agregar);
         resultadoAsistente.classList.add("assistant-result--success");
     } catch (error) {
-        resultadoAsistente.textContent = error.message || "No pudimos conectar con el recomendador.";
+        resultadoAsistente.textContent = window.MicheMango.esLocal && error.message
+            ? error.message
+            : "No pudimos generar una recomendación en este momento. Inténtalo de nuevo.";
         resultadoAsistente.classList.add("assistant-result--error");
     } finally {
         botonEnviar.disabled = false;

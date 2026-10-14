@@ -57,7 +57,9 @@ if (formularioContacto) {
             estadoContacto.classList.add("contacto-estado--exito");
             formularioContacto.reset();
         } catch (error) {
-            estadoContacto.textContent = error.message || "No pudimos enviar tu mensaje. Revisa la conexión e inténtalo de nuevo.";
+            estadoContacto.textContent = error instanceof TypeError
+                ? "No pudimos enviar tu mensaje en este momento. Inténtalo de nuevo más tarde."
+                : error.message || "No pudimos enviar tu mensaje. Inténtalo de nuevo.";
             estadoContacto.classList.add("contacto-estado--error");
         } finally {
             botonEnviar.disabled = false;

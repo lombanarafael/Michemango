@@ -21,11 +21,13 @@ const app = express();
 const PUERTO = process.env.PORT || 3000;
 const CARPETA_PUBLICA = path.join(__dirname, "..", "public");
 const origenesPermitidos = new Set();
-const origenesConfigurados = (
-  process.env.FRONTEND_ORIGIN ||
-  process.env.CORS_ORIGINS ||
-  "http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000,http://127.0.0.1:3000"
-)
+const origenesConfigurados = [
+  process.env.FRONTEND_ORIGIN,
+  process.env.CORS_ORIGINS,
+]
+  .filter(Boolean)
+  .join(",") || "http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000,http://127.0.0.1:3000";
+const origenesPermitidosConfigurados = origenesConfigurados
   .split(",")
   .map((origen) => origen.trim())
   .filter(Boolean);
@@ -53,7 +55,7 @@ if (process.env.NODE_ENV === "production" && !process.env.DATABASE_URL) {
   throw new Error("Configura DATABASE_URL en producción para conservar solicitudes y productos.");
 }
 
-origenesConfigurados.forEach((origen) => {
+origenesPermitidosConfigurados.forEach((origen) => {
   let url;
   try {
     url = new URL(origen);

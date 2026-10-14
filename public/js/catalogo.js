@@ -180,8 +180,14 @@ async function cargarCatalogo() {
         renderizarPedido();
         window.dispatchEvent(new CustomEvent("michemango:catalogo-listo", { detail: { productos: catalogo } }));
     } catch (error) {
+        const mensaje = window.MicheMango.esLocal
+            ? `${error.message} No se pudo cargar el catálogo.`
+            : "No pudimos cargar el catálogo en este momento. Inténtalo de nuevo más tarde.";
+        if (window.MicheMango.esLocal) {
+            console.error("No se pudo cargar el catálogo.", error);
+        }
         contenedorCatalogo.replaceChildren(
-            crearElemento("p", "catalogo-vacio", `${error.message} Comprueba la configuración de la API.`)
+            crearElemento("p", "catalogo-vacio", mensaje)
         );
     }
 }
