@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solicitudes | MicheMango</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body class="admin-body">
@@ -72,6 +75,15 @@
 
         <section class="admin-section">
             <h2>Solicitudes recibidas</h2>
+            <label class="admin-filter">
+                Filtrar por estado
+                <select id="filtro-solicitudes">
+                    <option value="">Todas</option>
+                    <option value="nueva">Nuevas</option>
+                    <option value="confirmada">Confirmadas</option>
+                    <option value="atendida">Atendidas</option>
+                </select>
+            </label>
             <div class="admin-table-wrap">
                 <table class="admin-table">
                     <thead>
@@ -81,6 +93,7 @@
                             <th scope="col">Correo</th>
                             <th scope="col">Teléfono</th>
                             <th scope="col">Tipo</th>
+                            <th scope="col">Producto de interés</th>
                             <th scope="col">Mensaje</th>
                             <th scope="col">Estado</th>
                             <th scope="col">Acciones</th>

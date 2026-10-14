@@ -42,13 +42,15 @@ function limpiarFormularioProducto() {
 
 async function cargarSolicitudes() {
     try {
-        const solicitudes = await solicitar("/api/admin/solicitudes");
+        const filtroEstado = document.getElementById("filtro-solicitudes").value;
+        const query = filtroEstado ? `?estado=${encodeURIComponent(filtroEstado)}` : "";
+        const solicitudes = await solicitar(`/api/admin/solicitudes${query}`);
         cuerpoSolicitudes.replaceChildren();
 
         if (solicitudes.length === 0) {
             const fila = document.createElement("tr");
             const celda = crearCelda("Todavía no hay solicitudes.");
-            celda.colSpan = 8;
+            celda.colSpan = 9;
             fila.append(celda);
             cuerpoSolicitudes.append(fila);
             return true;
@@ -62,13 +64,14 @@ async function cargarSolicitudes() {
                 crearCelda(solicitud.correo || "No registrado"),
                 crearCelda(solicitud.telefono || "No registrado"),
                 crearCelda(String(solicitud.tipo || "").replaceAll("_", " ")),
+                crearCelda(solicitud.productoInteres || "No especificado"),
                 crearCelda(solicitud.mensaje)
             );
 
             const celdaEstado = document.createElement("td");
             const selector = document.createElement("select");
             selector.setAttribute("aria-label", `Estado de solicitud de ${solicitud.nombre}`);
-            ["nueva", "atendida"].forEach((estado) => {
+            ["nueva", "confirmada", "atendida"].forEach((estado) => {
                 const opcion = document.createElement("option");
                 opcion.value = estado;
                 opcion.textContent = estado;
@@ -221,7 +224,7 @@ botonCancelarProducto.addEventListener("click", limpiarFormularioProducto);
 
 botonCerrarSesion.addEventListener("click", async () => {
     try {
-        await solicitar("/admin/logout", { method: "POST" });
+        await solicitar("/api/admin/logout", { method: "POST" });
         window.location.assign("login.html");
     } catch (error) {
         mostrarMensaje(error.message, true);
@@ -234,3 +237,5 @@ Promise.all([cargarSolicitudes(), cargarProductos()]).then(([solicitudesOk, prod
         mostrarMensaje("Productos y solicitudes cargados.");
     }
 });
+
+document.getElementById("filtro-solicitudes").addEventListener("change", cargarSolicitudes);
