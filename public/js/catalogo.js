@@ -204,10 +204,6 @@ if (botonPedidoWhatsApp) {
 
         lineas.push(`Total estimado: ${window.MicheMango.formatCOP(total)}`);
         lineas.push("Este mensaje es una consulta de pedido; aún no se ha confirmado ninguna compra.");
-        if (window.MicheMango.preciosConfirmados !== true) {
-            estadoPedido.textContent = "Aviso: los precios son demostrativos y deben confirmarse antes de enviar el pedido.";
-            estadoPedido.className = "contacto-estado contacto-estado--error";
-        }
         try {
             const url = window.MicheMango.whatsappUrl(lineas.join("\n"));
             window.open(url, "_blank", "noopener,noreferrer");

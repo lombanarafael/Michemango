@@ -12,19 +12,12 @@
     const apiBaseUrl = (override || apiBasePublicada || apiLocal).replace(/\/+$/, "");
 
     const configuracionNegocio = {
-        whatsappNumber: "TODO_CONFIRMAR",
-        preciosOficiales: {
-            "Micheman": "TODO_CONFIRMAR",
-            "Miche Premium": "TODO_CONFIRMAR",
-            "Mango Explosivo": "TODO_CONFIRMAR",
-            "Mini Miche": "TODO_CONFIRMAR",
-        },
+        whatsappNumber: "573105776753",
     };
 
     window.MicheMango = {
         apiBaseUrl,
         whatsappNumber: configuracionNegocio.whatsappNumber,
-        preciosConfirmados: false,
         apiUrl(path) {
             if (!this.apiBaseUrl) {
                 throw new Error("Configura la URL del backend en apiBasePublicada dentro de public/js/config.js.");
@@ -40,9 +33,16 @@
         },
         whatsappUrl(message) {
             if (!/^\d{8,15}$/.test(this.whatsappNumber)) {
-                throw new Error("El número de WhatsApp sigue pendiente de confirmación.");
+                throw new Error("No hay un número de WhatsApp válido configurado.");
             }
             return `https://wa.me/${this.whatsappNumber}?text=${encodeURIComponent(message)}`;
         },
     };
+
+    const enlaceWhatsApp = document.getElementById("whatsapp-contacto");
+    if (enlaceWhatsApp) {
+        const digitos = configuracionNegocio.whatsappNumber.slice(2);
+        enlaceWhatsApp.href = window.MicheMango.whatsappUrl("Hola, MicheMango. Quiero consultar el catálogo.");
+        enlaceWhatsApp.textContent = `+57 ${digitos.slice(0, 3)} ${digitos.slice(3, 6)} ${digitos.slice(6)}`;
+    }
 })();
