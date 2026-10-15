@@ -1,5 +1,5 @@
-# Destino provisional del servicio gratuito; cambia el host por la URL HTTPS de Render.
-/api/* https://michemango-api.onrender.com/api/:splat 200
+# Sustituye backend-url-pendiente.invalid por el host HTTPS asignado por Render.
+/api/* https://backend-url-pendiente.invalid/api/:splat 200
 
 # Permite servir la página principal para rutas estáticas desconocidas.
 /* /index.html 200
