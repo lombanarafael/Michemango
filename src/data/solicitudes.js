@@ -30,7 +30,8 @@ async function guardarSolicitud(solicitud) {
     await pool.query(
       `INSERT INTO michemango_requests
         (id, fecha, nombre, correo, telefono, tipo, producto_interes, mensaje, estado)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (id) DO NOTHING`,
       [
         solicitud.id,
         solicitud.fecha,
@@ -43,13 +44,18 @@ async function guardarSolicitud(solicitud) {
         solicitud.estado,
       ]
     );
-    return;
+    const guardada = await pool.query(
+      "SELECT id, fecha, estado FROM michemango_requests WHERE id = $1",
+      [solicitud.id]
+    );
+    return guardada.rows[0];
   }
 
   sqlite.prepare(
     `INSERT INTO michemango_requests
       (id, fecha, nombre, correo, telefono, tipo, producto_interes, mensaje, estado)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT (id) DO NOTHING`
   ).run(
     solicitud.id,
     solicitud.fecha,
@@ -61,6 +67,9 @@ async function guardarSolicitud(solicitud) {
     solicitud.mensaje,
     solicitud.estado
   );
+  return sqlite.prepare(
+    "SELECT id, fecha, estado FROM michemango_requests WHERE id = ?"
+  ).get(solicitud.id);
 }
 
 async function actualizarEstadoSolicitud(id, estado) {

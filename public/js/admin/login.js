@@ -10,9 +10,13 @@ if (formularioLogin) {
         mensajeLogin.className = "contacto-estado";
         boton.disabled = true;
         boton.textContent = "Verificando...";
+        const mostrandoEspera = () => {
+            mensajeLogin.textContent = "Despertando el servidor, un momento...";
+            mensajeLogin.className = "contacto-estado";
+        };
 
         try {
-            const respuesta = await window.MicheMango.apiFetch("/api/admin/login", {
+            const respuesta = await window.MicheMango.apiFetchConDespertar("/api/admin/login", {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
@@ -20,7 +24,7 @@ if (formularioLogin) {
                     usuario: datos.get("usuario"),
                     contrasena: datos.get("contrasena"),
                 }),
-            });
+            }, mostrandoEspera);
             const resultado = await respuesta.json();
 
             if (!respuesta.ok) {
@@ -29,8 +33,8 @@ if (formularioLogin) {
 
             window.location.assign("panel.html");
         } catch (error) {
-            mensajeLogin.textContent = error instanceof TypeError
-                ? "No pudimos iniciar sesión en este momento. Inténtalo de nuevo."
+            mensajeLogin.textContent = window.MicheMango.backendDisponible === false
+                ? "Estamos despertando el servidor, intenta de nuevo en un momento."
                 : error.message || "No pudimos iniciar sesión en este momento. Inténtalo de nuevo.";
             mensajeLogin.classList.add("contacto-estado--error");
         } finally {

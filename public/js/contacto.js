@@ -26,6 +26,7 @@ if (formularioContacto) {
         const botonEnviar = formularioContacto.querySelector('button[type="submit"]');
         const estadoContacto = document.getElementById("contacto-estado");
         const datos = new FormData(formularioContacto);
+        const claveIdempotencia = crypto.randomUUID();
         const correo = String(datos.get("correo") || "").trim();
         const telefono = String(datos.get("telefono") || "").trim();
         if (!correo && !telefono) {
@@ -37,11 +38,18 @@ if (formularioContacto) {
         estadoContacto.className = "contacto-estado";
         botonEnviar.disabled = true;
         botonEnviar.textContent = "Enviando...";
+        const mostrandoEspera = () => {
+            estadoContacto.textContent = "Despertando el servidor, un momento...";
+            estadoContacto.className = "contacto-estado";
+        };
 
         try {
-            const respuesta = await window.MicheMango.apiFetch("/api/solicitudes", {
+            const respuesta = await window.MicheMango.apiFetchConDespertar("/api/solicitudes", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Idempotency-Key": claveIdempotencia,
+                },
                 body: JSON.stringify({
                     nombre: datos.get("nombre"),
                     correo: datos.get("correo"),
@@ -50,7 +58,7 @@ if (formularioContacto) {
                     productoInteres: datos.get("productoInteres"),
                     mensaje: datos.get("mensaje"),
                 }),
-            });
+            }, mostrandoEspera);
             const resultado = await respuesta.json();
 
             if (!respuesta.ok) {

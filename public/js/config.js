@@ -8,6 +8,8 @@
     const apiLocal = esLocal && window.location.port !== "3000" ? `http://${apiLocalHost}:3000` : "";
     const apiBaseUrl = (override || apiLocal || apiBasePublicada).replace(/\/+$/, "");
     const TIEMPO_LIMITE_API = 7000;
+    const INTENTOS_DESPERTAR = 12;
+    const ESPERA_ENTRE_INTENTOS = 5000;
     let backendDisponible = null;
 
     const configuracionNegocio = {
@@ -19,6 +21,10 @@
         window.dispatchEvent(new CustomEvent("michemango:backend-estado", {
             detail: { disponible },
         }));
+    }
+
+    function esperar(ms) {
+        return new Promise((resolver) => window.setTimeout(resolver, ms));
     }
 
     window.MicheMango = {
@@ -43,31 +49,34 @@
         informarBackendNoDisponible() {
             informarEstadoBackend(false);
         },
-        async reintentarBackend() {
-            const controlador = new AbortController();
-            const tiempoLimite = window.setTimeout(() => controlador.abort(), TIEMPO_LIMITE_API);
-            try {
-                const respuesta = await fetch(this.apiUrl("/api/health"), {
-                    cache: "no-store",
-                    signal: controlador.signal,
-                });
-                if (!respuesta.ok) {
+        async reintentarBackend(onWait = () => {}) {
+            for (let intento = 1; intento <= INTENTOS_DESPERTAR; intento += 1) {
+                const controlador = new AbortController();
+                const tiempoLimite = window.setTimeout(() => controlador.abort(), TIEMPO_LIMITE_API);
+                try {
+                    const respuesta = await fetch(this.apiUrl("/api/health"), {
+                        cache: "no-store",
+                        signal: controlador.signal,
+                    });
+                    const estado = respuesta.ok ? await respuesta.json() : null;
+                    const disponible = estado?.status === "ok";
+                    informarEstadoBackend(disponible);
+                    if (disponible) {
+                        window.dispatchEvent(new CustomEvent("michemango:reintentar-catalogo"));
+                        return true;
+                    }
+                } catch {
                     informarEstadoBackend(false);
-                    return false;
+                } finally {
+                    window.clearTimeout(tiempoLimite);
                 }
-                const estado = await respuesta.json();
-                const disponible = estado.status === "ok";
-                informarEstadoBackend(disponible);
-                if (disponible) {
-                    window.dispatchEvent(new CustomEvent("michemango:reintentar-catalogo"));
+
+                if (intento < INTENTOS_DESPERTAR) {
+                    onWait();
+                    await esperar(ESPERA_ENTRE_INTENTOS);
                 }
-                return disponible;
-            } catch {
-                informarEstadoBackend(false);
-                return false;
-            } finally {
-                window.clearTimeout(tiempoLimite);
             }
+            return false;
         },
         async apiFetch(path, options = {}) {
             const url = this.apiUrl(path);
@@ -85,6 +94,27 @@
                 window.clearTimeout(tiempoLimite);
             }
         },
+        async apiFetchConDespertar(path, options = {}, onWait = () => {}) {
+            if (backendDisponible !== true) {
+                onWait();
+                if (!await this.reintentarBackend(onWait)) {
+                    throw new Error("El servidor todavía no está disponible.");
+                }
+            }
+
+            try {
+                const respuesta = await this.apiFetch(path, options);
+                if (respuesta.status < 500) return respuesta;
+            } catch {
+                informarEstadoBackend(false);
+            }
+
+            onWait();
+            if (!await this.reintentarBackend(onWait)) {
+                throw new Error("El servidor todavía no está disponible.");
+            }
+            return this.apiFetch(path, options);
+        },
         conectarFormularioBackend(formulario, mensaje) {
             if (!formulario) return;
 
@@ -101,7 +131,8 @@
             reintentar.addEventListener("click", async () => {
                 texto.textContent = "Estamos despertando el servidor, intenta de nuevo en un momento.";
                 reintentar.disabled = true;
-                await this.reintentarBackend();
+                const disponible = await this.reintentarBackend();
+                if (!disponible) texto.textContent = mensaje;
                 reintentar.disabled = false;
             });
             aviso.append(texto, reintentar);

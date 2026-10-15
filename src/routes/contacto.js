@@ -109,8 +109,13 @@ router.post(["/contacto", "/solicitudes"], limitarSolicitudes, async (req, res) 
       return res.status(400).json({ error: "Selecciona un producto disponible del catálogo." });
     }
 
+    const claveIdempotencia = req.get("Idempotency-Key");
+    if (claveIdempotencia && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(claveIdempotencia)) {
+      return res.status(400).json({ error: "La solicitud no tiene un identificador válido." });
+    }
+
     const solicitud = {
-      id: randomUUID(),
+      id: claveIdempotencia || randomUUID(),
       fecha: new Date().toISOString(),
       nombre,
       correo: correo || null,
@@ -121,13 +126,13 @@ router.post(["/contacto", "/solicitudes"], limitarSolicitudes, async (req, res) 
       estado: "nueva",
     };
 
-    await guardarSolicitud(solicitud);
+    const solicitudGuardada = await guardarSolicitud(solicitud);
     return res.status(201).json({
       mensaje: "¡Gracias! Registramos tu solicitud y nos pondremos en contacto contigo.",
       solicitud: {
-        id: solicitud.id,
-        fecha: solicitud.fecha,
-        estado: solicitud.estado,
+        id: solicitudGuardada.id,
+        fecha: solicitudGuardada.fecha,
+        estado: solicitudGuardada.estado,
       },
     });
   } catch (error) {

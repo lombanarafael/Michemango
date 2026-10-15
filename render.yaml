@@ -16,8 +16,6 @@ services:
         value: https://michemango.netlify.app
       - key: DATABASE_URL
         sync: false
-      - key: DATABASE_SSL
-        value: "true"
       - key: SESSION_SECRET
         generateValue: true
       - key: SESSION_SAME_SITE

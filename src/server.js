@@ -4,7 +4,13 @@ require("dotenv").config();
 // Importamos Express, las rutas y la fuente de datos del catálogo.
 const express = require("express");
 const { leerProductos } = require("./productos");
-const { pool, inicializarAlmacenamiento, cerrarAlmacenamiento, modoAlmacenamiento } = require("./data/storage");
+const {
+  pool,
+  sqlite,
+  inicializarAlmacenamiento,
+  cerrarAlmacenamiento,
+  modoAlmacenamiento,
+} = require("./data/storage");
 const contactoRouter = require("./routes/contacto");
 const adminRouter = require("./routes/admin");
 const adminAuthRouter = require("./routes/adminAuth");
@@ -142,7 +148,7 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", origen);
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Idempotency-Key");
   res.setHeader("Vary", "Origin");
 
   if (req.method === "OPTIONS") {
@@ -169,12 +175,26 @@ app.get("/api/health", async (req, res) => {
   try {
     if (pool) {
       await pool.query("SELECT 1");
+    } else if (modoAlmacenamiento() === "sqlite-local") {
+      sqlite.prepare("SELECT 1 AS ok").get();
+    } else {
+      return res.status(503).json({
+        status: "unavailable",
+        storage: "unavailable",
+        database: "unavailable",
+        error: "La base de datos no está configurada.",
+      });
     }
 
-    return res.json({ status: "ok", storage: modoAlmacenamiento() });
+    return res.json({ status: "ok", storage: modoAlmacenamiento(), database: "connected" });
   } catch (error) {
-    console.error("La comprobación de salud no pudo acceder al almacenamiento:", error.message);
-    return res.status(503).json({ status: "unavailable", storage: modoAlmacenamiento() });
+    console.error("La comprobación de salud no pudo acceder a la base de datos.", error.code || error.name);
+    return res.status(503).json({
+      status: "unavailable",
+      storage: modoAlmacenamiento(),
+      database: "unavailable",
+      error: "La base de datos no está disponible. Inténtalo de nuevo en un momento.",
+    });
   }
 });
 
@@ -250,7 +270,7 @@ if (require.main === module) {
       process.once("SIGTERM", () => cerrarServidor("SIGTERM"));
     })
     .catch((error) => {
-      console.error("No se pudo iniciar MicheMango:", error.message);
+      console.error("No se pudo iniciar MicheMango:", error.code || error.name);
       cerrarAlmacenamiento().catch((closeError) => {
         console.error("No se pudo cerrar el almacenamiento.", closeError.code || closeError.name);
       });

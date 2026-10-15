@@ -4,20 +4,34 @@ const { DatabaseSync } = require("node:sqlite");
 const { Pool } = require("pg");
 
 const DATABASE_URL = process.env.DATABASE_URL;
-const DATABASE_SSL = process.env.DATABASE_SSL;
 
-if (DATABASE_SSL !== undefined && !["true", "false"].includes(DATABASE_SSL)) {
-  throw new Error("DATABASE_SSL debe ser true o false.");
+function normalizarDatabaseUrl(databaseUrl) {
+  try {
+    const url = new URL(databaseUrl);
+    if (!["postgres:", "postgresql:"].includes(url.protocol)) {
+      throw new Error();
+    }
+    for (const [key] of [...url.searchParams.entries()]) {
+      if (["channel_binding", "sslmode", "ssl"].includes(key.toLowerCase())) {
+        url.searchParams.delete(key);
+      }
+    }
+    return url.toString();
+  } catch {
+    throw new Error("DATABASE_URL debe ser una URL PostgreSQL válida.");
+  }
 }
 
 const pool = DATABASE_URL
   ? new Pool({
-      connectionString: DATABASE_URL,
-      ssl: DATABASE_SSL === "true" ? { rejectUnauthorized: true } : undefined,
+      connectionString: normalizarDatabaseUrl(DATABASE_URL),
+      ssl: { rejectUnauthorized: true },
       connectionTimeoutMillis: 10000,
     })
   : null;
-const SQLITE_FILE = path.join(__dirname, "michemango.sqlite");
+const SQLITE_FILE = process.env.SQLITE_PATH
+  ? path.resolve(process.env.SQLITE_PATH)
+  : path.join(__dirname, "michemango.sqlite");
 const sqlite = !DATABASE_URL && process.env.NODE_ENV !== "production"
   ? new DatabaseSync(SQLITE_FILE)
   : null;
@@ -265,6 +279,7 @@ function modoAlmacenamiento() {
 module.exports = {
   pool,
   sqlite,
+  normalizarDatabaseUrl,
   inicializarAlmacenamiento,
   cerrarAlmacenamiento,
   modoAlmacenamiento,
