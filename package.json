@@ -7,7 +7,8 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "db:init": "node src/scripts/init-db.js",
-    "check": "node --check src/server.js && node --check src/productos.js && node --check src/data/storage.js && node --check src/data/solicitudes.js && node --check src/scripts/init-db.js && node --check src/middleware/requiereAdmin.js && node --check src/middleware/rateLimiters.js && node --check src/middleware/requestLogger.js && node --check src/routes/contacto.js && node --check src/routes/adminApi.js && node --check src/routes/adminAuth.js && node --check src/routes/recomendador.js && node --check src/routes/admin.js && node --check public/js/config.js && node --check public/js/menu.js && node --check public/js/animaciones.js && node --check public/js/catalogo.js && node --check public/js/contacto.js && node --check public/js/chatbot.js && node --check public/js/admin/login.js && node --check public/js/admin/panel.js"
+    "admin:hash": "node src/scripts/hash-password.js",
+    "check": "node --check src/server.js && node --check src/productos.js && node --check src/data/storage.js && node --check src/data/solicitudes.js && node --check src/scripts/init-db.js && node --check src/scripts/hash-password.js && node --check src/middleware/requiereAdmin.js && node --check src/middleware/rateLimiters.js && node --check src/middleware/requestLogger.js && node --check src/routes/contacto.js && node --check src/routes/adminApi.js && node --check src/routes/adminAuth.js && node --check src/routes/recomendador.js && node --check src/routes/admin.js && node --check public/js/config.js && node --check public/js/menu.js && node --check public/js/animaciones.js && node --check public/js/catalogo.js && node --check public/js/contacto.js && node --check public/js/chatbot.js && node --check public/js/admin/login.js && node --check public/js/admin/panel.js"
   },
   "repository": {
     "type": "git",

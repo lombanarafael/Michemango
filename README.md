@@ -32,10 +32,10 @@ Requiere Node.js 22.13 o superior y npm. Desde PowerShell en la raíz:
 ```powershell
 Copy-Item .env.example .env
 npm install
-node -e "require('bcryptjs').hash('ELIGE_UNA_CONTRASENA_SEGURA', 12).then(console.log)"
+npm run admin:hash
 ```
 
-Copia el hash generado a `ADMIN_PASSWORD_HASH` dentro de `.env`, elige un usuario administrativo y sustituye `SESSION_SECRET` por una cadena aleatoria de al menos 32 caracteres. No guardes la contraseña en el repositorio ni compartas `.env`. `ADMIN_USER` y `ADMIN_USERNAME` son alias; configura solo uno.
+Escribe y confirma una contraseña nueva en la terminal (no se muestra); el comando imprime únicamente su hash bcrypt. Copia ese hash a `ADMIN_PASSWORD_HASH` en `.env`. Elige un usuario administrativo y sustituye `SESSION_SECRET` por una cadena aleatoria de al menos 32 caracteres. No pongas la contraseña en argumentos de comandos ni la guardes en el repositorio. `ADMIN_USER` y `ADMIN_USERNAME` son alias; configura solo uno.
 
 ```powershell
 npm run dev
@@ -62,12 +62,6 @@ Configúralas en `.env` local o en la configuración de variables secretas del p
 | `CORS_ORIGINS` | Lista adicional de orígenes exactos permitidos, combinada con `FRONTEND_ORIGIN`. |
 | `SESSION_SAME_SITE` | `lax`, `strict` o `none`; el proxy de mismo origen usa `lax`. |
 | `SESSION_SECURE` | `true` en HTTPS; `SameSite=None` exige cookie segura en producción. |
-Para generar el hash local sin instalar herramientas adicionales:
-
-```powershell
-node -e "require('bcryptjs').hash('ELIGE_UNA_CONTRASENA_SEGURA', 12).then(console.log)"
-```
-
 El archivo `.env.example` solo contiene valores de ejemplo. `.gitignore` excluye `.env`, archivos SQLite, archivos temporales y solicitudes locales. No hace falta ninguna clave de IA ni servicio externo para recomendar productos.
 
 ## Catálogo y fuente de precios
@@ -147,7 +141,7 @@ Los límites pueden cambiar. La documentación pública de Netlify no asegura qu
 1. **Conserva Netlify Free.** Mantén el sitio en `michemango.netlify.app`, publica `public/` y no compres dominio ni actives auto-recarga o funciones pagas. La documentación actual indica 300 créditos mensuales con un límite estricto para Free: cuando se agotan, los sitios se pausan hasta el siguiente ciclo; no habilites upgrades. Algunos equipos antiguos tienen planes heredados con condiciones diferentes, así que verifica **Billing** y confirma que siga siendo Free. Fuentes: [créditos de Netlify](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/how-credits-work/) y [FAQ de facturación](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/billing-faq-for-credit-based-plans/). La documentación no garantiza que todos los flujos de alta de cuentas sean libres de pedir tarjeta; no añadas información de pago y detente si Netlify la solicita.
 2. **Comprueba Render Free.** El Web Service configurado en [render.yaml](./render.yaml) usa `plan: free`. Render documenta que duerme tras 15 minutos sin tráfico, tarda alrededor de un minuto en volver y tiene un sistema de archivos efímero. El cupo incluye 750 horas de instancia por espacio de trabajo y mes. Si se agota el ancho de banda, las horas o el límite de compilación, Render puede suspender el servicio o impedir nuevos despliegues. Si no agregas método de pago, Render dice que suspenderá los servicios cuando el uso pudiera generar cargos. No agregues tarjeta ni cambies a un plan pago. Detalles: [Render Free](https://render.com/docs/free) y [FAQ de Render](https://render.com/docs/faq).
 3. **Crea la base gratuita en Neon.** Usa el plan Free permanente, no una prueba. Según su [página oficial](https://neon.com/pricing), no pide tarjeta. Mantente dentro de 1 GB por proyecto (20 GB total por cuenta), 100 CU-horas y 5 GB de transferencia por proyecto al mes; el cómputo se duerme tras 5 minutos y se reactiva al recibir consultas. Free incluye una instantánea manual y una ventana de recuperación de seis horas (hasta 1 GB de historial), pero no copias programadas. Exporta los datos importantes por tu cuenta. Fuentes: [planes Neon](https://neon.com/docs/introduction/plans) y [scale-to-zero](https://neon.com/docs/introduction/scale-to-zero). No añadas método de pago.
-4. En Neon crea el proyecto y copia desde **Connect** la URI PostgreSQL con pooler. No la publiques. En Render crea un **Blueprint** desde este repositorio con [render.yaml](./render.yaml); el servicio debe decir **Free** y no se crea una base de datos en Render. Cuando lo solicite, pega `DATABASE_URL`, `ADMIN_USER` y un `ADMIN_PASSWORD_HASH` bcrypt nuevo; Render genera `SESSION_SECRET`. Conserva `NODE_ENV=production`, `DATABASE_SSL=true`, `FRONTEND_ORIGIN=https://michemango.netlify.app`, `CORS_ORIGINS=https://michemango.netlify.app`, `SESSION_SECURE=true` y `SESSION_SAME_SITE=lax`. No configures otros servicios ni agregues tarjeta.
+4. En Neon crea el proyecto y copia desde **Connect** la URI PostgreSQL con pooler. No la publiques. En Render crea un **Blueprint** desde este repositorio con [render.yaml](./render.yaml); el servicio debe decir **Free** y no se crea una base de datos en Render. Antes de seguir, genera una contraseña administrativa nueva con `npm run admin:hash` en una terminal local y pega solo el hash impreso. Cuando Render lo solicite, pega `DATABASE_URL`, `ADMIN_USER` y el `ADMIN_PASSWORD_HASH`; Render genera `SESSION_SECRET`. Conserva `NODE_ENV=production`, `DATABASE_SSL=true`, `FRONTEND_ORIGIN=https://michemango.netlify.app`, `CORS_ORIGINS=https://michemango.netlify.app`, `SESSION_SECURE=true` y `SESSION_SAME_SITE=lax`. No configures otros servicios ni agregues tarjeta.
 5. Despliega el servicio y copia la URL HTTPS exacta que Render asigne. El nombre inicial es `michemango-api`, pero el subdominio puede no estar disponible. Verifica `https://<URL-REAL-DEL-SERVICIO>/api/health`.
 6. En [public/_redirects](./public/_redirects), cambia únicamente el host `backend-url-pendiente.invalid` por el host de la URL HTTPS real que Render asignó. Mantén `/api/*`, la ruta `/api/:splat` y el código `200`. No cambies `apiBasePublicada = "/api"` en [public/js/config.js](./public/js/config.js); el navegador usará el proxy de mismo origen y las cookies administrativas.
 7. En Netlify conserva el plan **Free**, el subdominio `michemango.netlify.app` y la carpeta publicada `public`. No configures dominio propio ni actives auto-recarga ni funciones pagas. Después del despliegue, comprueba `https://michemango.netlify.app/api/health` y `/api/productos`.
