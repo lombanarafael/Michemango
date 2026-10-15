@@ -43,7 +43,7 @@ npm run dev
 npm start
 ```
 
-El sitio de desarrollo estará en `http://localhost:3000/`; comprueba `http://localhost:3000/api/health`. `npm run check` comprueba la sintaxis y que el catálogo de respaldo siga sincronizado. `npm run db:init` crea el esquema y aplica la importación inicial; también se ejecuta al arrancar el servidor. Con `DATABASE_URL`, se usa PostgreSQL. Sin esa variable en desarrollo, se usa SQLite en `src/data/michemango.sqlite`. PostgreSQL es obligatorio en producción. Los archivos SQLite locales se excluyen de Git.
+El sitio de desarrollo estará en `http://localhost:3000/`; comprueba `http://localhost:3000/api/health`. `npm run check` comprueba la sintaxis y que el catálogo de respaldo siga sincronizado. `npm run test:smoke` prueba solicitud, login, rutas protegidas, confirmación, persistencia tras reiniciar, normalización del URI Neon y respuesta de salud ante una base caída; crea y elimina una base SQLite temporal y usa credenciales de prueba generadas solo en memoria. `npm run db:init` crea el esquema y aplica la importación inicial; también se ejecuta al arrancar el servidor. Con `DATABASE_URL`, se usa PostgreSQL. Sin esa variable en desarrollo, se usa SQLite en `src/data/michemango.sqlite`. PostgreSQL es obligatorio en producción. Los archivos SQLite locales se excluyen de Git.
 
 ## Variables privadas del backend
 
