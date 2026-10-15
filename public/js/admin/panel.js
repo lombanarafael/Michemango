@@ -17,7 +17,7 @@ function crearCelda(texto) {
 }
 
 async function solicitar(path, opciones = {}) {
-    const respuesta = await fetch(window.MicheMango.apiUrl(path), {
+    const respuesta = await window.MicheMango.apiFetch(path, {
         credentials: "include",
         ...opciones,
     });

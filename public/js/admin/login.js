@@ -12,7 +12,7 @@ if (formularioLogin) {
         boton.textContent = "Verificando...";
 
         try {
-            const respuesta = await fetch(window.MicheMango.apiUrl("/api/admin/login"), {
+            const respuesta = await window.MicheMango.apiFetch("/api/admin/login", {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },

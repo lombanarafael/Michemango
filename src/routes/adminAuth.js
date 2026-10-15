@@ -60,9 +60,6 @@ router.post("/logout", requiereAdminApi, (req, res, next) => {
       secure: process.env.NODE_ENV === "production" && process.env.SESSION_SECURE !== "false",
       path: "/",
     };
-    if (process.env.SESSION_COOKIE_DOMAIN) {
-      opcionesCookie.domain = process.env.SESSION_COOKIE_DOMAIN;
-    }
     res.clearCookie("michemango.sid", opcionesCookie);
     return res.json({ mensaje: "Sesión cerrada." });
   });

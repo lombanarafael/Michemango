@@ -36,7 +36,7 @@ formularioAsistente?.addEventListener("submit", async (evento) => {
     resultadoAsistente.className = "assistant-result";
 
     try {
-        const respuesta = await fetch(window.MicheMango.apiUrl("/api/recomendaciones"), {
+        const respuesta = await window.MicheMango.apiFetch("/api/recomendaciones", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -53,7 +53,7 @@ formularioAsistente?.addEventListener("submit", async (evento) => {
         resultadoAsistente.replaceChildren();
         const etiquetaModo = document.createElement("span");
         etiquetaModo.className = "assistant-mode";
-        etiquetaModo.textContent = resultado.modo === "ia" ? "Sugerencia con IA" : "Sugerencia por reglas";
+        etiquetaModo.textContent = "Sugerencia por preferencias";
         const nombre = document.createElement("h3");
         nombre.textContent = `${resultado.producto.imagen || "🥭"} ${resultado.producto.nombre}`;
         const motivo = document.createElement("p");

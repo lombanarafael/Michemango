@@ -106,10 +106,6 @@ const sessionOptions = {
     maxAge: 60 * 60 * 1000,
   },
 };
-if (process.env.SESSION_COOKIE_DOMAIN) {
-  sessionOptions.cookie.domain = process.env.SESSION_COOKIE_DOMAIN;
-}
-
 if (pool) {
   sessionOptions.store = new PgSessionStore({
     pool,

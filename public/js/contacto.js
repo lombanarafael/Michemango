@@ -35,7 +35,7 @@ if (formularioContacto) {
         botonEnviar.textContent = "Enviando...";
 
         try {
-            const respuesta = await fetch(window.MicheMango.apiUrl("/api/solicitudes"), {
+            const respuesta = await window.MicheMango.apiFetch("/api/solicitudes", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

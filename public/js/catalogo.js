@@ -160,7 +160,7 @@ async function cargarCatalogo() {
     if (!contenedorCatalogo) return;
 
     try {
-        const respuesta = await fetch(window.MicheMango.apiUrl("/api/productos"));
+        const respuesta = await window.MicheMango.apiFetch("/api/productos");
         const productos = await respuesta.json();
         if (!respuesta.ok || !Array.isArray(productos)) {
             throw new Error(productos.error || "El servidor devolvió un catálogo no válido.");
