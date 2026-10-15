@@ -9,7 +9,7 @@ public/
   index.html
   admin/{login.html,panel.html}
   css/styles.css
-  js/{config.js,menu.js,animaciones.js,catalogo-respaldo.js,catalogo.js,contacto.js,chatbot.js}
+  js/{config.js,menu.js,animaciones.js,catalogo-respaldo.js,catalogo.js,chatbot.js}
   js/admin/{login.js,panel.js}
 src/
   server.js
@@ -23,7 +23,7 @@ package.json
 .env.example
 ```
 
-`public/js/chatbot.js` controla el widget flotante de recomendación. Las sugerencias se calculan exclusivamente con reglas propias en `src/routes/recomendador.js`, basadas en sabor, tamaño y ocasión. No se hacen llamadas a servicios externos ni se usa IA.
+`public/js/chatbot.js` controla el widget de recomendación. Las sugerencias se calculan en el navegador con reglas propias, según sabor, tamaño y ocasión, y usan el catálogo de respaldo; por eso funcionan aunque el backend esté dormido o no disponible. No se hacen llamadas a servicios externos ni se usa IA. Los clientes realizan sus pedidos y consultas por WhatsApp; el sitio no muestra un formulario de contacto.
 
 ## Requisitos y ejecución local
 
@@ -43,7 +43,7 @@ npm run dev
 npm start
 ```
 
-El sitio de desarrollo estará en `http://localhost:3000/`; comprueba `http://localhost:3000/api/health`. `npm run check` comprueba la sintaxis y que el catálogo de respaldo siga sincronizado. `npm run test:smoke` prueba solicitud, login, rutas protegidas, confirmación, persistencia tras reiniciar, normalización del URI Neon y respuesta de salud ante una base caída; crea y elimina una base SQLite temporal y usa credenciales de prueba generadas solo en memoria. `npm run db:init` crea el esquema y aplica la importación inicial; también se ejecuta al arrancar el servidor. Con `DATABASE_URL`, se usa PostgreSQL. Sin esa variable en desarrollo, se usa SQLite en `src/data/michemango.sqlite`. PostgreSQL es obligatorio en producción. Los archivos SQLite locales se excluyen de Git.
+El sitio de desarrollo estará en `http://localhost:3000/`; comprueba `http://localhost:3000/api/health`. `npm run check` comprueba la sintaxis y que el catálogo de respaldo siga sincronizado. `npm run test:smoke` prueba solicitudes recibidas por la API, login, rutas protegidas, confirmación, persistencia tras reiniciar, normalización del URI Neon y respuesta de salud ante una base caída; crea y elimina una base SQLite temporal y usa credenciales de prueba generadas solo en memoria. `npm run db:init` crea el esquema y aplica la importación inicial; también se ejecuta al arrancar el servidor. Con `DATABASE_URL`, se usa PostgreSQL. Sin esa variable en desarrollo, se usa SQLite en `src/data/michemango.sqlite`. PostgreSQL es obligatorio en producción. Los archivos SQLite locales se excluyen de Git.
 
 ## Variables privadas del backend
 

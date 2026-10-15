@@ -4,10 +4,43 @@ const botonCerrarAsistente = document.getElementById("asistente-cerrar");
 const formularioAsistente = document.getElementById("form-recomendador");
 const resultadoAsistente = document.getElementById("recomendacion-resultado");
 const botonWhatsAppFlotante = document.getElementById("whatsapp-flotante");
-window.MicheMango.conectarFormularioBackend(
-    formularioAsistente,
-    "Estamos despertando el servidor, intenta de nuevo en un momento."
-);
+let productosRecomendables = Array.isArray(window.MicheMangoCatalogoRespaldo)
+    ? window.MicheMangoCatalogoRespaldo
+    : [];
+
+window.addEventListener("michemango:catalogo-listo", (evento) => {
+    if (Array.isArray(evento.detail?.productos) && evento.detail.productos.length > 0) {
+        productosRecomendables = evento.detail.productos;
+    }
+});
+
+function recomendarProducto(preferencias) {
+    const puntuados = productosRecomendables.map((producto) => {
+        const texto = `${producto.nombre} ${producto.categoria} ${producto.descripcion}`.toLocaleLowerCase("es-CO");
+        let puntos = 0;
+
+        if (preferencias.sabor === "picante" && /picante|taj[ií]n|chamoy/.test(texto)) puntos += 4;
+        if (preferencias.sabor === "picante" && String(producto.categoria || "").toLocaleLowerCase("es-CO") === "picante") puntos += 2;
+        if (preferencias.sabor === "dulce" && /dulce|gomitas|fruta|premium/.test(texto)) puntos += 3;
+        if (preferencias.sabor === "acido" && /lim[oó]n|maracuy[aá]|[aá]cid/.test(texto)) puntos += 3;
+        if (preferencias.sabor === "refrescante" && /fresco|refrescante|lim[oó]n/.test(texto)) puntos += 3;
+
+        const esPequeno = /mini|pequeñ/.test(texto);
+        const esGrande = /premium|explosivo/.test(texto);
+        if (preferencias.tamano === "pequeno") puntos += esPequeno ? 4 : -1;
+        if (preferencias.tamano === "mediano") puntos += esPequeno ? -2 : esGrande ? 1 : 3;
+        if (preferencias.tamano === "grande") puntos += esGrande ? 4 : -1;
+        if (preferencias.ocasion === "celebracion") puntos += esGrande ? 3 : 0;
+        if (preferencias.ocasion === "compartir") puntos += esGrande ? 2 : 0;
+        if (preferencias.ocasion === "regalo") puntos += esGrande ? 3 : 0;
+        if (preferencias.ocasion === "antojo") puntos += esPequeno || /cl[aá]sico/.test(texto) ? 2 : 0;
+
+        return { producto, puntos };
+    });
+
+    puntuados.sort((a, b) => b.puntos - a.puntos || a.producto.precio - b.producto.precio);
+    return puntuados[0]?.producto;
+}
 
 function abrirAsistente(abierto) {
     if (!botonAsistente || !panelAsistente) return;
@@ -30,62 +63,43 @@ document.addEventListener("keydown", (evento) => {
     }
 });
 
-formularioAsistente?.addEventListener("submit", async (evento) => {
+formularioAsistente?.addEventListener("submit", (evento) => {
     evento.preventDefault();
-    const botonEnviar = formularioAsistente.querySelector('button[type="submit"]');
     const datos = new FormData(formularioAsistente);
-    botonEnviar.disabled = true;
-    botonEnviar.textContent = "Buscando tu miche...";
-    resultadoAsistente.textContent = "Estoy revisando el catálogo y tus preferencias.";
+    const producto = recomendarProducto({
+        sabor: datos.get("sabor"),
+        tamano: datos.get("tamano"),
+        ocasion: datos.get("ocasion"),
+    });
     resultadoAsistente.className = "assistant-result";
 
-    try {
-        const respuesta = await window.MicheMango.apiFetch("/api/recomendaciones", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                sabor: datos.get("sabor"),
-                tamano: datos.get("tamano"),
-                ocasion: datos.get("ocasion"),
-            }),
-        });
-        const resultado = await respuesta.json();
-        if (!respuesta.ok) {
-            throw new Error(resultado.error || "No pudimos generar una recomendación.");
-        }
-
-        resultadoAsistente.replaceChildren();
-        const etiquetaModo = document.createElement("span");
-        etiquetaModo.className = "assistant-mode";
-        etiquetaModo.textContent = "Sugerencia por preferencias";
-        const nombre = document.createElement("h3");
-        nombre.textContent = `${resultado.producto.imagen || "🥭"} ${resultado.producto.nombre}`;
-        const motivo = document.createElement("p");
-        motivo.textContent = resultado.motivo;
-        const precio = document.createElement("p");
-        precio.textContent = `Precio actual: ${window.MicheMango.formatCOP(resultado.producto.precio)}`;
-        const aviso = document.createElement("small");
-        aviso.textContent = resultado.aviso;
-        const agregar = document.createElement("button");
-        agregar.type = "button";
-        agregar.className = "pedido-button";
-        agregar.textContent = "Agregar una unidad al pedido";
-        agregar.addEventListener("click", () => {
-            window.MicheMango.agregarAlPedido(resultado.producto.id, 1);
-            document.getElementById("pedido")?.scrollIntoView({ behavior: "smooth" });
-            abrirAsistente(false);
-        });
-        resultadoAsistente.append(etiquetaModo, nombre, motivo, precio, aviso, agregar);
-        resultadoAsistente.classList.add("assistant-result--success");
-    } catch {
-        resultadoAsistente.textContent = window.MicheMango.backendDisponible === false
-            ? "Estamos despertando el servidor, intenta de nuevo en un momento."
-            : "No pudimos generar una recomendación en este momento. Inténtalo de nuevo.";
+    if (!producto) {
+        resultadoAsistente.textContent = "No encontramos productos para recomendar en este momento.";
         resultadoAsistente.classList.add("assistant-result--error");
-    } finally {
-        botonEnviar.disabled = window.MicheMango.backendDisponible === false;
-        botonEnviar.textContent = "Recomiéndame una miche";
+        return;
     }
+
+    resultadoAsistente.replaceChildren();
+    const etiquetaModo = document.createElement("span");
+    etiquetaModo.className = "assistant-mode";
+    etiquetaModo.textContent = "Sugerencia según tus preferencias";
+    const nombre = document.createElement("h3");
+    nombre.textContent = `${producto.imagen || "🥭"} ${producto.nombre}`;
+    const motivo = document.createElement("p");
+    motivo.textContent = "Elegido según tus preferencias y los productos del catálogo.";
+    const precio = document.createElement("p");
+    precio.textContent = `Precio actual: ${window.MicheMango.formatCOP(producto.precio)}`;
+    const agregar = document.createElement("button");
+    agregar.type = "button";
+    agregar.className = "pedido-button";
+    agregar.textContent = "Agregar una unidad al pedido";
+    agregar.addEventListener("click", () => {
+        window.MicheMango.agregarAlPedido(producto.id, 1);
+        document.getElementById("pedido")?.scrollIntoView({ behavior: "smooth" });
+        abrirAsistente(false);
+    });
+    resultadoAsistente.append(etiquetaModo, nombre, motivo, precio, agregar);
+    resultadoAsistente.classList.add("assistant-result--success");
 });
 
 botonWhatsAppFlotante?.addEventListener("click", () => {

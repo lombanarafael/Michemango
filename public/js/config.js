@@ -115,39 +115,6 @@
             }
             return this.apiFetch(path, options);
         },
-        conectarFormularioBackend(formulario, mensaje) {
-            if (!formulario) return;
-
-            const aviso = document.createElement("div");
-            aviso.className = "api-service-notice";
-            aviso.setAttribute("role", "status");
-            aviso.setAttribute("aria-live", "polite");
-            const texto = document.createElement("p");
-            texto.textContent = mensaje;
-            const reintentar = document.createElement("button");
-            reintentar.className = "api-retry-button";
-            reintentar.type = "button";
-            reintentar.textContent = "Reintentar";
-            reintentar.addEventListener("click", async () => {
-                texto.textContent = "Estamos despertando el servidor, intenta de nuevo en un momento.";
-                reintentar.disabled = true;
-                const disponible = await this.reintentarBackend();
-                if (!disponible) texto.textContent = mensaje;
-                reintentar.disabled = false;
-            });
-            aviso.append(texto, reintentar);
-            aviso.hidden = true;
-            formulario.insertAdjacentElement("afterend", aviso);
-
-            const actualizar = (disponible) => {
-                formulario.querySelectorAll("input, select, textarea, button").forEach((control) => {
-                    control.disabled = !disponible;
-                });
-                aviso.hidden = disponible;
-            };
-            window.addEventListener("michemango:backend-estado", (evento) => actualizar(evento.detail.disponible));
-            if (backendDisponible === false) actualizar(false);
-        },
         formatCOP(value) {
             return new Intl.NumberFormat("es-CO", {
                 style: "currency",
