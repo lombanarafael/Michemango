@@ -1,5 +1,9 @@
 const formularioContacto = document.getElementById("form-contacto");
 const contactoProducto = document.getElementById("contacto-producto");
+window.MicheMango.conectarFormularioBackend(
+    formularioContacto,
+    "Estamos despertando el servidor, intenta de nuevo en un momento."
+);
 
 function actualizarProductosContacto(productos) {
     if (!contactoProducto || !Array.isArray(productos)) return;
@@ -57,12 +61,12 @@ if (formularioContacto) {
             estadoContacto.classList.add("contacto-estado--exito");
             formularioContacto.reset();
         } catch (error) {
-            estadoContacto.textContent = error instanceof TypeError
-                ? "No pudimos enviar tu mensaje en este momento. Inténtalo de nuevo más tarde."
+            estadoContacto.textContent = window.MicheMango.backendDisponible === false
+                ? "Estamos despertando el servidor, intenta de nuevo en un momento."
                 : error.message || "No pudimos enviar tu mensaje. Inténtalo de nuevo.";
             estadoContacto.classList.add("contacto-estado--error");
         } finally {
-            botonEnviar.disabled = false;
+            botonEnviar.disabled = window.MicheMango.backendDisponible === false;
             botonEnviar.textContent = "Enviar mensaje";
         }
     });

@@ -31,21 +31,49 @@ body {
     line-height: 1.6;
 }
 
-.api-wakeup-notice {
-    position: fixed;
-    z-index: 2000;
-    top: 12px;
-    left: 50%;
-    width: max-content;
-    max-width: calc(100% - 24px);
-    padding: 12px 18px;
+.api-service-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0 0 16px;
+    padding: 14px 18px;
+    color: #352015;
+    background: #fff1c2;
+    border: 1px solid #e3a523;
+    border-radius: 14px;
+    box-shadow: var(--shadow-soft);
+}
+
+.api-service-notice[hidden] {
+    display: none;
+}
+
+.api-service-notice p {
+    margin: 0 !important;
+    font-weight: 700;
+}
+
+.api-retry-button {
+    padding: 8px 14px;
     color: white;
     background: var(--color-leaf);
+    border: 0;
     border-radius: 999px;
-    box-shadow: var(--shadow-soft);
+    cursor: pointer;
+    font: inherit;
     font-weight: 800;
-    text-align: center;
-    transform: translateX(-50%);
+}
+
+.api-retry-button:focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 3px;
+}
+
+.api-retry-button:disabled {
+    cursor: wait;
+    opacity: 0.7;
 }
 
 header {

@@ -4,6 +4,10 @@ const botonCerrarAsistente = document.getElementById("asistente-cerrar");
 const formularioAsistente = document.getElementById("form-recomendador");
 const resultadoAsistente = document.getElementById("recomendacion-resultado");
 const botonWhatsAppFlotante = document.getElementById("whatsapp-flotante");
+window.MicheMango.conectarFormularioBackend(
+    formularioAsistente,
+    "Estamos despertando el servidor, intenta de nuevo en un momento."
+);
 
 function abrirAsistente(abierto) {
     if (!botonAsistente || !panelAsistente) return;
@@ -73,13 +77,13 @@ formularioAsistente?.addEventListener("submit", async (evento) => {
         });
         resultadoAsistente.append(etiquetaModo, nombre, motivo, precio, aviso, agregar);
         resultadoAsistente.classList.add("assistant-result--success");
-    } catch (error) {
-        resultadoAsistente.textContent = window.MicheMango.esLocal && error.message
-            ? error.message
+    } catch {
+        resultadoAsistente.textContent = window.MicheMango.backendDisponible === false
+            ? "Estamos despertando el servidor, intenta de nuevo en un momento."
             : "No pudimos generar una recomendación en este momento. Inténtalo de nuevo.";
         resultadoAsistente.classList.add("assistant-result--error");
     } finally {
-        botonEnviar.disabled = false;
+        botonEnviar.disabled = window.MicheMango.backendDisponible === false;
         botonEnviar.textContent = "Recomiéndame una miche";
     }
 });

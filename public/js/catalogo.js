@@ -6,6 +6,9 @@ const botonPedidoWhatsApp = document.getElementById("pedido-whatsapp");
 const estadoPedido = document.getElementById("pedido-estado");
 let catalogo = [];
 const pedido = new Map();
+const catalogoRespaldo = Array.isArray(window.MicheMangoCatalogoRespaldo)
+    ? window.MicheMangoCatalogoRespaldo
+    : [];
 
 function crearElemento(tag, className, text) {
     const elemento = document.createElement(tag);
@@ -160,13 +163,13 @@ async function cargarCatalogo() {
     if (!contenedorCatalogo) return;
 
     try {
-        const respuesta = await window.MicheMango.apiFetch("/api/productos");
+        const respuesta = await window.MicheMango.apiFetch("/api/productos", { timeoutMs: 2500 });
         const productos = await respuesta.json();
         if (!respuesta.ok || !Array.isArray(productos)) {
-            throw new Error(productos.error || "El servidor devolvió un catálogo no válido.");
+            throw new Error("El servidor no devolvió un catálogo válido.");
         }
 
-        catalogo = productos.filter((producto) =>
+        const productosValidos = productos.filter((producto) =>
             producto &&
             (typeof producto.id === "string" || Number.isInteger(producto.id)) &&
             typeof producto.nombre === "string" &&
@@ -174,22 +177,23 @@ async function cargarCatalogo() {
             Number(producto.precio) > 0 &&
             typeof producto.descripcion === "string"
         ).map((producto) => ({ ...producto, precio: Number(producto.precio) }));
-
-        renderizarFiltros(catalogo);
-        renderizarProductos(catalogo);
-        renderizarPedido();
-        window.dispatchEvent(new CustomEvent("michemango:catalogo-listo", { detail: { productos: catalogo } }));
-    } catch (error) {
-        const mensaje = window.MicheMango.esLocal
-            ? `${error.message} No se pudo cargar el catálogo.`
-            : "No pudimos cargar el catálogo en este momento. Inténtalo de nuevo más tarde.";
-        if (window.MicheMango.esLocal) {
-            console.error("No se pudo cargar el catálogo.", error);
+        if (productosValidos.length === 0) {
+            throw new Error("El servidor devolvió un catálogo vacío.");
         }
-        contenedorCatalogo.replaceChildren(
-            crearElemento("p", "catalogo-vacio", mensaje)
-        );
+
+        mostrarCatalogo(productosValidos);
+    } catch {
+        window.MicheMango.informarBackendNoDisponible();
+        mostrarCatalogo(catalogoRespaldo);
     }
+}
+
+function mostrarCatalogo(productos) {
+    catalogo = productos;
+    renderizarFiltros(catalogo);
+    renderizarProductos(catalogo);
+    renderizarPedido();
+    window.dispatchEvent(new CustomEvent("michemango:catalogo-listo", { detail: { productos: catalogo } }));
 }
 
 window.MicheMango.agregarAlPedido = agregarAlPedido;
@@ -220,4 +224,6 @@ if (botonPedidoWhatsApp) {
     });
 }
 
+mostrarCatalogo(catalogoRespaldo);
+window.addEventListener("michemango:reintentar-catalogo", cargarCatalogo);
 cargarCatalogo();

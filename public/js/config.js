@@ -7,40 +7,26 @@
     const apiLocalHost = window.location.hostname === "::1" ? "[::1]" : window.location.hostname;
     const apiLocal = esLocal && window.location.port !== "3000" ? `http://${apiLocalHost}:3000` : "";
     const apiBaseUrl = (override || apiLocal || apiBasePublicada).replace(/\/+$/, "");
-    const TIEMPO_ENTRE_COMPROBACIONES = 4 * 60 * 1000;
-    const INTENTOS_DESPERTAR = 12;
-    let apiListaHasta = 0;
-    let despertarEnCurso = null;
+    const TIEMPO_LIMITE_API = 7000;
+    let backendDisponible = null;
 
     const configuracionNegocio = {
         whatsappNumber: "573105776753",
     };
 
-    function mostrarAvisoServidor(mensaje) {
-        let aviso = document.getElementById("api-wakeup-notice");
-        if (!aviso) {
-            aviso = document.createElement("div");
-            aviso.id = "api-wakeup-notice";
-            aviso.className = "api-wakeup-notice";
-            aviso.setAttribute("role", "status");
-            aviso.setAttribute("aria-live", "polite");
-            document.body.prepend(aviso);
-        }
-        aviso.textContent = mensaje;
-        aviso.hidden = false;
-    }
-
-    function ocultarAvisoServidor() {
-        document.getElementById("api-wakeup-notice")?.remove();
-    }
-
-    function esperar(ms) {
-        return new Promise((resolver) => window.setTimeout(resolver, ms));
+    function informarEstadoBackend(disponible) {
+        backendDisponible = disponible;
+        window.dispatchEvent(new CustomEvent("michemango:backend-estado", {
+            detail: { disponible },
+        }));
     }
 
     window.MicheMango = {
         apiBaseUrl,
         esLocal,
+        get backendDisponible() {
+            return backendDisponible;
+        },
         whatsappNumber: configuracionNegocio.whatsappNumber,
         apiUrl(path) {
             if (!this.apiBaseUrl) {
@@ -54,57 +40,82 @@
                 ? ruta
                 : `${this.apiBaseUrl}${ruta}`;
         },
+        informarBackendNoDisponible() {
+            informarEstadoBackend(false);
+        },
+        async reintentarBackend() {
+            const controlador = new AbortController();
+            const tiempoLimite = window.setTimeout(() => controlador.abort(), TIEMPO_LIMITE_API);
+            try {
+                const respuesta = await fetch(this.apiUrl("/api/health"), {
+                    cache: "no-store",
+                    signal: controlador.signal,
+                });
+                if (!respuesta.ok) {
+                    informarEstadoBackend(false);
+                    return false;
+                }
+                const estado = await respuesta.json();
+                const disponible = estado.status === "ok";
+                informarEstadoBackend(disponible);
+                if (disponible) {
+                    window.dispatchEvent(new CustomEvent("michemango:reintentar-catalogo"));
+                }
+                return disponible;
+            } catch {
+                informarEstadoBackend(false);
+                return false;
+            } finally {
+                window.clearTimeout(tiempoLimite);
+            }
+        },
         async apiFetch(path, options = {}) {
             const url = this.apiUrl(path);
-
-            if (Date.now() >= apiListaHasta) {
-                if (!despertarEnCurso) {
-                    despertarEnCurso = (async () => {
-                        let ultimoError;
-                        for (let intento = 1; intento <= INTENTOS_DESPERTAR; intento += 1) {
-                            const controlador = new AbortController();
-                            const tiempoLimite = window.setTimeout(() => controlador.abort(), 10000);
-                            try {
-                                const respuesta = await fetch(this.apiUrl("/api/health"), {
-                                    cache: "no-store",
-                                    signal: controlador.signal,
-                                });
-                                if (respuesta.ok) {
-                                    const estado = await respuesta.json();
-                                    if (estado.status === "ok") {
-                                        apiListaHasta = Date.now() + TIEMPO_ENTRE_COMPROBACIONES;
-                                        ocultarAvisoServidor();
-                                        return;
-                                    }
-                                }
-                                ultimoError = new Error(`HTTP ${respuesta.status}`);
-                            } catch (error) {
-                                ultimoError = error;
-                            } finally {
-                                window.clearTimeout(tiempoLimite);
-                            }
-
-                            if (esLocal) {
-                                throw new Error("Inicia el servidor MicheMango en http://localhost:3000.");
-                            }
-
-                            mostrarAvisoServidor("Despertando el servidor, un momento...");
-                            if (intento < INTENTOS_DESPERTAR) {
-                                await esperar(3000);
-                            }
-                        }
-
-                        ocultarAvisoServidor();
-                        console.error("El servidor no respondió tras varios intentos.", ultimoError);
-                        throw new Error("El servidor está tardando en responder. Inténtalo de nuevo en un momento.");
-                    })().finally(() => {
-                        despertarEnCurso = null;
-                    });
-                }
-                await despertarEnCurso;
+            const { timeoutMs = TIEMPO_LIMITE_API, ...opcionesFetch } = options;
+            const controlador = new AbortController();
+            const tiempoLimite = window.setTimeout(() => controlador.abort(), timeoutMs);
+            try {
+                const respuesta = await fetch(url, { ...opcionesFetch, signal: controlador.signal });
+                informarEstadoBackend(respuesta.status < 500);
+                return respuesta;
+            } catch (error) {
+                informarEstadoBackend(false);
+                throw error;
+            } finally {
+                window.clearTimeout(tiempoLimite);
             }
+        },
+        conectarFormularioBackend(formulario, mensaje) {
+            if (!formulario) return;
 
-            return fetch(url, options);
+            const aviso = document.createElement("div");
+            aviso.className = "api-service-notice";
+            aviso.setAttribute("role", "status");
+            aviso.setAttribute("aria-live", "polite");
+            const texto = document.createElement("p");
+            texto.textContent = mensaje;
+            const reintentar = document.createElement("button");
+            reintentar.className = "api-retry-button";
+            reintentar.type = "button";
+            reintentar.textContent = "Reintentar";
+            reintentar.addEventListener("click", async () => {
+                texto.textContent = "Estamos despertando el servidor, intenta de nuevo en un momento.";
+                reintentar.disabled = true;
+                await this.reintentarBackend();
+                reintentar.disabled = false;
+            });
+            aviso.append(texto, reintentar);
+            aviso.hidden = true;
+            formulario.insertAdjacentElement("afterend", aviso);
+
+            const actualizar = (disponible) => {
+                formulario.querySelectorAll("input, select, textarea, button").forEach((control) => {
+                    control.disabled = !disponible;
+                });
+                aviso.hidden = disponible;
+            };
+            window.addEventListener("michemango:backend-estado", (evento) => actualizar(evento.detail.disponible));
+            if (backendDisponible === false) actualizar(false);
         },
         formatCOP(value) {
             return new Intl.NumberFormat("es-CO", {

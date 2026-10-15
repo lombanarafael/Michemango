@@ -9,7 +9,7 @@ public/
   index.html
   admin/{login.html,panel.html}
   css/styles.css
-  js/{config.js,menu.js,animaciones.js,catalogo.js,contacto.js,chatbot.js}
+  js/{config.js,menu.js,animaciones.js,catalogo-respaldo.js,catalogo.js,contacto.js,chatbot.js}
   js/admin/{login.js,panel.js}
 src/
   server.js
@@ -17,7 +17,7 @@ src/
   routes/{admin.js,adminAuth.js,adminApi.js,contacto.js,recomendador.js}
   middleware/{requiereAdmin.js,rateLimiters.js,requestLogger.js}
   data/{storage.js,productos.json,solicitudes.js}
-  scripts/init-db.js
+  scripts/{init-db.js,generate-catalogo-respaldo.js}
 index.html
 package.json
 .env.example
@@ -43,7 +43,7 @@ npm run dev
 npm start
 ```
 
-El sitio de desarrollo estará en `http://localhost:3000/`; comprueba `http://localhost:3000/api/health`. `npm run check` comprueba la sintaxis de backend y frontend. `npm run db:init` crea el esquema y aplica la importación inicial; también se ejecuta al arrancar el servidor. Con `DATABASE_URL`, se usa PostgreSQL. Sin esa variable en desarrollo, se usa SQLite en `src/data/michemango.sqlite`. PostgreSQL es obligatorio en producción. Los archivos SQLite locales se excluyen de Git.
+El sitio de desarrollo estará en `http://localhost:3000/`; comprueba `http://localhost:3000/api/health`. `npm run check` comprueba la sintaxis y que el catálogo de respaldo siga sincronizado. `npm run db:init` crea el esquema y aplica la importación inicial; también se ejecuta al arrancar el servidor. Con `DATABASE_URL`, se usa PostgreSQL. Sin esa variable en desarrollo, se usa SQLite en `src/data/michemango.sqlite`. PostgreSQL es obligatorio en producción. Los archivos SQLite locales se excluyen de Git.
 
 ## Variables privadas del backend
 
@@ -66,7 +66,7 @@ El archivo `.env.example` solo contiene valores de ejemplo. `.gitignore` excluye
 
 ## Catálogo y fuente de precios
 
-`src/data/productos.json` es la fuente de precios para la inicialización del catálogo. En uso, el backend obtiene los valores actuales de la base configurada (PostgreSQL desplegado o SQLite local) y el frontend y el recomendador consumen ese mismo endpoint `GET /api/productos`; no hay una segunda lista de precios en JavaScript. Las modificaciones hechas en el panel se guardan en esa base. La configuración del frontend contiene solo el número público de WhatsApp.
+`src/data/productos.json` es la fuente canónica de los cuatro productos iniciales y sus precios. Ejecuta `npm run catalogo:sync` para generar `public/js/catalogo-respaldo.js`; no edites ese archivo generado a mano. El frontend muestra esos productos inmediatamente y luego intenta actualizar el catálogo desde `GET /api/productos` durante un máximo de 2,5 segundos. Si el backend está caído, lento o devuelve un error, se conserva el catálogo de respaldo y los pedidos por WhatsApp siguen disponibles. Si cambias los productos o precios oficiales en `src/data/productos.json`, regenera el respaldo y publica el frontend junto con el backend. Las modificaciones administrativas guardadas en la base se reflejan cuando la API responde; el respaldo estático representa el catálogo canónico incluido en el proyecto.
 
 ## PostgreSQL y persistencia
 
