@@ -18,7 +18,6 @@ if (formularioLogin) {
         try {
             const respuesta = await window.MicheMango.apiFetchConDespertar("/api/admin/login", {
                 method: "POST",
-                credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     usuario: datos.get("usuario"),
@@ -31,6 +30,7 @@ if (formularioLogin) {
                 throw new Error(resultado.error || "No fue posible iniciar sesión.");
             }
 
+            localStorage.setItem("michemango.adminToken", resultado.token);
             window.location.assign("panel.html");
         } catch (error) {
             mensajeLogin.textContent = window.MicheMango.backendDisponible === false

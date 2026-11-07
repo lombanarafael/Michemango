@@ -1,12 +1,10 @@
 (() => {
-    const apiBasePublicada = "/api";
-    const override = typeof window.MICHEMANGO_API_URL === "string"
-        ? window.MICHEMANGO_API_URL.trim()
-        : "";
+    // Esta es la única dirección pública del backend; local se conecta a localhost:3000.
+    const apiBasePublicada = "https://michemango-api.onrender.com";
     const esLocal = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
     const apiLocalHost = window.location.hostname === "::1" ? "[::1]" : window.location.hostname;
     const apiLocal = esLocal && window.location.port !== "3000" ? `http://${apiLocalHost}:3000` : "";
-    const apiBaseUrl = (override || apiLocal || apiBasePublicada).replace(/\/+$/, "");
+    const apiBaseUrl = (apiLocal || (esLocal && window.location.port === "3000" ? "" : apiBasePublicada)).replace(/\/+$/, "");
     const TIEMPO_LIMITE_API = 7000;
     const INTENTOS_DESPERTAR = 12;
     const ESPERA_ENTRE_INTENTOS = 5000;
@@ -35,16 +33,8 @@
         },
         whatsappNumber: configuracionNegocio.whatsappNumber,
         apiUrl(path) {
-            if (!this.apiBaseUrl) {
-                const mensaje = esLocal
-                    ? "Inicia el servidor MicheMango en http://localhost:3000."
-                    : "El servicio no está disponible en este momento.";
-                throw new Error(mensaje);
-            }
             const ruta = path.startsWith("/") ? path : `/${path}`;
-            return this.apiBaseUrl === "/api" && ruta.startsWith("/api/")
-                ? ruta
-                : `${this.apiBaseUrl}${ruta}`;
+            return `${this.apiBaseUrl}${ruta}`;
         },
         informarBackendNoDisponible() {
             informarEstadoBackend(false);

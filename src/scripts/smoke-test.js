@@ -14,7 +14,17 @@ const adminUser = `smoke-${crypto.randomUUID()}`;
 process.env.NODE_ENV = "development";
 process.env.ADMIN_USER = adminUser;
 process.env.ADMIN_PASSWORD_HASH = bcrypt.hashSync(adminPassword, 8);
-process.env.SESSION_SECRET = crypto.randomBytes(48).toString("base64url");
+process.env.JWT_SECRET = crypto.randomBytes(48).toString("base64url");
+process.env.FRONTEND_ORIGIN = "https://michemango.netlify.app";
+process.env.GITHUB_PAGES_ORIGIN = "https://lombanarafael.github.io";
+process.env.CORS_ORIGINS = [
+  process.env.FRONTEND_ORIGIN,
+  process.env.GITHUB_PAGES_ORIGIN,
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+].join(",");
 process.env.SQLITE_PATH = databaseFile;
 process.env.DATABASE_URL = "";
 
@@ -61,9 +71,8 @@ async function iniciarSesion(baseUrl) {
     body: JSON.stringify({ usuario: adminUser, contrasena: adminPassword }),
   });
   assert.equal(response.status, 200, "admin login succeeds");
-  const cookies = response.headers.getSetCookie();
-  assert.ok(cookies.length, "login sets a session cookie");
-  return cookies[0].split(";", 1)[0];
+  assert.deepEqual(response.headers.getSetCookie(), [], "login does not set cookies");
+  return (await response.json()).token;
 }
 
 async function main() {
@@ -77,16 +86,38 @@ async function main() {
   );
   console.log("PASS health check and automatic SQLite schema migration");
 
+  response = await fetch(`${baseUrl}/api/health`, {
+    method: "OPTIONS",
+    headers: {
+      Origin: "http://localhost:5500",
+      "Access-Control-Request-Method": "GET",
+      "Access-Control-Request-Headers": "authorization",
+    },
+  });
+  assert.equal(response.status, 204, "local browser origins can make an authorized request");
+  assert.equal(response.headers.get("access-control-allow-origin"), "http://localhost:5500");
+  assert.match(response.headers.get("access-control-allow-headers"), /Authorization/i);
+  response = await fetch(`${baseUrl}/api/health`, {
+    method: "OPTIONS",
+    headers: {
+      Origin: process.env.GITHUB_PAGES_ORIGIN,
+      "Access-Control-Request-Method": "POST",
+    },
+  });
+  assert.equal(response.status, 204, "GitHub Pages can contact the backend");
+  assert.equal(response.headers.get("access-control-allow-origin"), process.env.GITHUB_PAGES_ORIGIN);
+  response = await fetch(`${baseUrl}/api/health`, { headers: { Origin: "https://sitio-ajeno.example" } });
+  assert.equal(response.status, 403, "unknown browser origins are rejected");
+  console.log("PASS CORS allows Netlify, GitHub Pages and localhost but blocks other sites");
+
   const idempotencyKey = crypto.randomUUID();
   const requestBody = {
     nombre: "Prueba local",
     correo: "smoke@example.test",
     telefono: "",
-    tipo: "duda",
-    productoInteres: "Micheman",
     mensaje: "Verificar persistencia después de reiniciar.",
   };
-  const enviarSolicitud = () => fetch(`${baseUrl}/api/solicitudes`, {
+  const enviarSolicitud = () => fetch(`${baseUrl}/api/contacto`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -100,20 +131,23 @@ async function main() {
   const duplicada = await enviarSolicitud();
   assert.equal(duplicada.status, 201);
   assert.equal((await duplicada.json()).solicitud.id, cuerpoCreado.solicitud.id);
-  console.log("PASS contact submission and idempotent retry");
+  console.log("PASS contact submission without a product and idempotent retry");
 
   response = await fetch(`${baseUrl}/api/admin/solicitudes`);
   assert.equal(response.status, 401, "admin routes reject unauthenticated requests");
-  let cookie = await iniciarSesion(baseUrl);
-  response = await fetch(`${baseUrl}/api/admin/session`, { headers: { Cookie: cookie } });
+  let token = await iniciarSesion(baseUrl);
+  const autorizacion = { Authorization: `Bearer ${token}` };
+  response = await fetch(`${baseUrl}/api/admin/session`, { headers: autorizacion });
   assert.equal(response.status, 200);
-  response = await fetch(`${baseUrl}/api/admin/solicitudes`, { headers: { Cookie: cookie } });
+  response = await fetch(`${baseUrl}/api/admin/solicitudes`, { headers: autorizacion });
   let solicitudes = await response.json();
   assert.equal(response.status, 200);
   assert.equal(solicitudes.length, 1, "idempotent retry does not duplicate a request");
+  assert.equal(solicitudes[0].nombre, "Prueba local");
+  assert.equal(solicitudes[0].productoInteres, null);
   response = await fetch(`${baseUrl}/api/admin/solicitudes/${cuerpoCreado.solicitud.id}/estado`, {
     method: "PATCH",
-    headers: { Cookie: cookie, "Content-Type": "application/json" },
+    headers: { ...autorizacion, "Content-Type": "application/json" },
     body: JSON.stringify({ estado: "confirmada" }),
   });
   assert.equal(response.status, 200);
@@ -124,15 +158,21 @@ async function main() {
   baseUrl = await startApp();
   response = await fetch(`${baseUrl}/api/health`);
   assert.equal(response.status, 200);
-  cookie = await iniciarSesion(baseUrl);
+  token = await iniciarSesion(baseUrl);
   response = await fetch(`${baseUrl}/api/admin/solicitudes?estado=confirmada`, {
-    headers: { Cookie: cookie },
+    headers: { Authorization: `Bearer ${token}` },
   });
   solicitudes = await response.json();
   assert.equal(response.status, 200);
   assert.equal(solicitudes.length, 1);
   assert.equal(solicitudes[0].id, cuerpoCreado.solicitud.id);
   console.log("PASS confirmed request persists after server and SQLite restart");
+
+  response = await fetch(`${baseUrl}/api/admin/solicitudes`, {
+    headers: { Authorization: "Bearer token-falso" },
+  });
+  assert.equal(response.status, 401, "admin routes reject invalid bearer tokens");
+  console.log("PASS invalid JWT cannot access the admin panel");
 
   const neonUrl = "postgresql://ep-example.neon.tech/database?sslmode=require&channel_binding=require";
   const normalizedUrl = storage.normalizarDatabaseUrl(neonUrl);

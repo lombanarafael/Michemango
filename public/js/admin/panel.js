@@ -17,14 +17,24 @@ function crearCelda(texto) {
 }
 
 async function solicitar(path, opciones = {}) {
+    const token = localStorage.getItem("michemango.adminToken");
+    if (!token) {
+        window.location.assign("login.html");
+        throw new Error("Inicia sesión para ver el panel.");
+    }
+
     const respuesta = await window.MicheMango.apiFetch(path, {
-        credentials: "include",
         ...opciones,
+        headers: {
+            ...(opciones.headers || {}),
+            Authorization: `Bearer ${token}`,
+        },
     });
 
     if (respuesta.status === 401) {
+        localStorage.removeItem("michemango.adminToken");
         window.location.assign("login.html");
-        throw new Error("La sesión venció. Inicia sesión de nuevo.");
+        throw new Error("Tu sesión venció. Inicia sesión de nuevo.");
     }
 
     const resultado = await respuesta.json();
@@ -223,12 +233,8 @@ formularioProducto.addEventListener("submit", async (evento) => {
 botonCancelarProducto.addEventListener("click", limpiarFormularioProducto);
 
 botonCerrarSesion.addEventListener("click", async () => {
-    try {
-        await solicitar("/api/admin/logout", { method: "POST" });
-        window.location.assign("login.html");
-    } catch (error) {
-        mostrarMensaje(error.message, true);
-    }
+    localStorage.removeItem("michemango.adminToken");
+    window.location.assign("login.html");
 });
 
 mostrarMensaje("Cargando el panel...");

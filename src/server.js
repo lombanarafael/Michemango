@@ -18,27 +18,29 @@ const adminApiRouter = require("./routes/adminApi");
 const recomendadorRouter = require("./routes/recomendador");
 const helmet = require("helmet");
 const path = require("path");
-const session = require("express-session");
-const connectPgSimple = require("connect-pg-simple");
 const requestLogger = require("./middleware/requestLogger");
 
 // Creamos la aplicación y ubicamos la carpeta pública del sitio.
 const app = express();
 const PUERTO = process.env.PORT || 3000;
 const CARPETA_PUBLICA = path.join(__dirname, "..", "public");
-const origenesPermitidos = new Set();
-const origenesConfigurados = [
+const origenesLocales = [
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
+const sitiosPublicados = [
   process.env.FRONTEND_ORIGIN,
-  process.env.CORS_ORIGINS,
-]
-  .filter(Boolean)
-  .join(",") || "http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000,http://127.0.0.1:3000";
-const origenesPermitidosConfigurados = origenesConfigurados
+  process.env.GITHUB_PAGES_ORIGIN,
+].filter(Boolean);
+const origenesCORS = (process.env.CORS_ORIGINS || "")
   .split(",")
   .map((origen) => origen.trim())
   .filter(Boolean);
+const origenesPermitidos = new Set([...origenesLocales, ...origenesCORS]);
 
-// Evitamos iniciar el panel con credenciales o secreto de sesión sin configurar.
+// Evitamos iniciar el panel si faltan sus credenciales o la clave para firmar tokens.
 if (!(process.env.ADMIN_USERNAME || process.env.ADMIN_USER) || !process.env.ADMIN_PASSWORD_HASH) {
   throw new Error("Configura ADMIN_USER (o ADMIN_USERNAME) y ADMIN_PASSWORD_HASH en el entorno.");
 }
@@ -47,21 +49,34 @@ if (!/^\$2[aby]\$\d{2}\$/.test(process.env.ADMIN_PASSWORD_HASH)) {
   throw new Error("ADMIN_PASSWORD_HASH debe contener un hash bcrypt válido.");
 }
 
-if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
-  throw new Error("SESSION_SECRET en .env debe tener al menos 32 caracteres.");
-}
-
-if (process.env.NODE_ENV === "production" && !process.env.CORS_ORIGINS) {
-  if (!process.env.FRONTEND_ORIGIN) {
-    throw new Error("Configura FRONTEND_ORIGIN con el origen público del frontend en producción.");
-  }
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  throw new Error("JWT_SECRET debe tener al menos 32 caracteres.");
 }
 
 if (process.env.NODE_ENV === "production" && !process.env.DATABASE_URL) {
   throw new Error("Configura DATABASE_URL en producción para conservar solicitudes y productos.");
 }
 
-origenesPermitidosConfigurados.forEach((origen) => {
+if (process.env.NODE_ENV === "production" && (!process.env.FRONTEND_ORIGIN || !process.env.GITHUB_PAGES_ORIGIN)) {
+  throw new Error("Configura FRONTEND_ORIGIN y GITHUB_PAGES_ORIGIN en producción.");
+}
+
+sitiosPublicados.forEach((origen) => {
+  let url;
+  try {
+    url = new URL(origen);
+  } catch {
+    throw new Error("FRONTEND_ORIGIN y GITHUB_PAGES_ORIGIN deben ser direcciones HTTPS válidas.");
+  }
+  if (
+    url.origin !== origen ||
+    (process.env.NODE_ENV === "production" && url.protocol !== "https:")
+  ) {
+    throw new Error("Los sitios publicados deben ser orígenes exactos, sin ruta ni barra final.");
+  }
+});
+
+origenesCORS.forEach((origen) => {
   let url;
   try {
     url = new URL(origen);
@@ -69,28 +84,22 @@ origenesPermitidosConfigurados.forEach((origen) => {
     throw new Error(`CORS_ORIGINS contiene un origen inválido: ${origen}`);
   }
 
+  const esLocal = origenesLocales.includes(origen);
+  const esSitioPublicado = sitiosPublicados.includes(origen);
+  if (!esLocal && !esSitioPublicado) {
+    throw new Error(`CORS_ORIGINS solo puede incluir los sitios publicados y localhost: ${origen}`);
+  }
   if (
-    origen === "*" ||
     url.origin !== origen ||
     !["http:", "https:"].includes(url.protocol) ||
-    (process.env.NODE_ENV === "production" && url.protocol !== "https:")
+    (process.env.NODE_ENV === "production" && !esLocal && url.protocol !== "https:")
   ) {
-    throw new Error(`CORS_ORIGINS debe contener solo orígenes exactos${process.env.NODE_ENV === "production" ? " HTTPS" : " HTTP(S)"}, sin rutas ni comodines: ${origen}`);
+    throw new Error(`Cada origen CORS debe ser exacto y no llevar barra final: ${origen}`);
   }
-
-  origenesPermitidos.add(origen);
 });
 
-if (process.env.NODE_ENV === "production" && origenesPermitidos.size === 0) {
-  throw new Error("FRONTEND_ORIGIN debe contener un origen HTTPS permitido en producción.");
-}
-
-const sameSite = process.env.SESSION_SAME_SITE || (process.env.NODE_ENV === "production" ? "none" : "lax");
-if (!["lax", "strict", "none"].includes(sameSite)) {
-  throw new Error("SESSION_SAME_SITE debe ser lax, strict o none.");
-}
-if (sameSite === "none" && process.env.NODE_ENV === "production" && process.env.SESSION_SECURE === "false") {
-  throw new Error("SESSION_SECURE=true es obligatorio con SameSite=None en producción.");
+if (process.env.NODE_ENV === "production" && sitiosPublicados.some((origen) => !origenesPermitidos.has(origen))) {
+  throw new Error("CORS_ORIGINS debe incluir Netlify y GitHub Pages.");
 }
 
 // Si hay un proxy HTTPS al desplegar, Express podrá reconocer la conexión segura.
@@ -98,29 +107,7 @@ if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
 
-const PgSessionStore = connectPgSimple(session);
-const sessionOptions = {
-  name: "michemango.sid",
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite,
-    secure: process.env.NODE_ENV === "production" && process.env.SESSION_SECURE !== "false",
-    path: "/",
-    maxAge: 60 * 60 * 1000,
-  },
-};
-if (pool) {
-  sessionOptions.store = new PgSessionStore({
-    pool,
-    tableName: "michemango_sessions",
-    createTableIfMissing: true,
-  });
-}
-
-// Creamos sesiones antes de las rutas que comprueban si el usuario inició sesión.
+// Añadimos cabeceras de seguridad y un registro sencillo de peticiones.
 app.use(requestLogger);
 app.use(helmet({
   contentSecurityPolicy: {
@@ -131,9 +118,8 @@ app.use(helmet({
     },
   },
 }));
-app.use(session(sessionOptions));
 
-// Solo permitimos solicitudes desde el sitio configurado y orígenes locales de desarrollo.
+// Solo permitimos el sitio publicado y los orígenes locales de desarrollo.
 app.use((req, res, next) => {
   const origen = req.get("Origin");
 
@@ -144,11 +130,9 @@ app.use((req, res, next) => {
   if (!origenesPermitidos.has(origen)) {
     return res.status(403).json({ error: "Este origen no tiene permiso para usar la API." });
   }
-
   res.setHeader("Access-Control-Allow-Origin", origen);
-  res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Idempotency-Key");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Idempotency-Key, Authorization");
   res.setHeader("Vary", "Origin");
 
   if (req.method === "OPTIONS") {

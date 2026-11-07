@@ -44,7 +44,7 @@ router.post(["/contacto", "/solicitudes"], limitarSolicitudes, async (req, res) 
   const correo = limpiarTexto(cuerpo.correo).toLowerCase();
   const telefono = limpiarTexto(cuerpo.telefono);
   const mensaje = limpiarTexto(cuerpo.mensaje);
-  const tipo = typeof cuerpo.tipo === "string" ? cuerpo.tipo : "";
+  const tipo = typeof cuerpo.tipo === "string" ? cuerpo.tipo : "duda";
   const productoInteres = limpiarTexto(cuerpo.productoInteres);
 
   if (
@@ -97,16 +97,19 @@ router.post(["/contacto", "/solicitudes"], limitarSolicitudes, async (req, res) 
   }
 
   try {
-    if (!productoInteres || productoInteres.length > 80) {
-      return res.status(400).json({ error: "Selecciona el producto que te interesa." });
-    }
+    let productoCoincidente = null;
+    if (productoInteres) {
+      if (productoInteres.length > 80) {
+        return res.status(400).json({ error: "El producto de interés es demasiado largo." });
+      }
 
-    const productos = await leerProductos();
-    const productoCoincidente = productos.find(
-      (producto) => producto.nombre.toLocaleLowerCase("es-CO") === productoInteres.toLocaleLowerCase("es-CO")
-    );
-    if (!productoCoincidente) {
-      return res.status(400).json({ error: "Selecciona un producto disponible del catálogo." });
+      const productos = await leerProductos();
+      productoCoincidente = productos.find(
+        (producto) => producto.nombre.toLocaleLowerCase("es-CO") === productoInteres.toLocaleLowerCase("es-CO")
+      );
+      if (!productoCoincidente) {
+        return res.status(400).json({ error: "Selecciona un producto disponible del catálogo." });
+      }
     }
 
     const claveIdempotencia = req.get("Idempotency-Key");
@@ -121,7 +124,7 @@ router.post(["/contacto", "/solicitudes"], limitarSolicitudes, async (req, res) 
       correo: correo || null,
       telefono: telefono || null,
       tipo,
-      productoInteres: productoCoincidente.nombre,
+      productoInteres: productoCoincidente ? productoCoincidente.nombre : null,
       mensaje,
       estado: "nueva",
     };

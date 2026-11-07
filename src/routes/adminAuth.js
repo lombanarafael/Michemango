@@ -1,6 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const { requiereAdminApi } = require("../middleware/requiereAdmin");
+const { crearTokenAdmin, requiereAdminApi } = require("../middleware/requiereAdmin");
 const { limitarLogin } = require("../middleware/rateLimiters");
 
 const router = express.Router();
@@ -26,43 +26,14 @@ router.post("/login", limitarLogin, async (req, res, next) => {
     return next(error);
   }
 
-  return req.session.regenerate((error) => {
-    if (error) {
-      console.error("No se pudo renovar la sesión administrativa.", error.code || error.name);
-      return next(error);
-    }
-
-    req.session.admin = true;
-    return req.session.save((errorAlGuardar) => {
-      if (errorAlGuardar) {
-        console.error("No se pudo guardar la sesión administrativa.", errorAlGuardar.code || errorAlGuardar.name);
-        return next(errorAlGuardar);
-      }
-      return res.json({ mensaje: "Sesión iniciada." });
-    });
+  return res.json({
+    mensaje: "Sesión iniciada.",
+    token: crearTokenAdmin(usuario),
   });
 });
 
 router.get("/session", requiereAdminApi, (req, res) => {
   res.json({ autenticado: true });
-});
-
-router.post("/logout", requiereAdminApi, (req, res, next) => {
-  req.session.destroy((error) => {
-    if (error) {
-      console.error("No se pudo cerrar la sesión administrativa.", error.code || error.name);
-      return next(error);
-    }
-
-    const opcionesCookie = {
-      httpOnly: true,
-      sameSite: process.env.SESSION_SAME_SITE || (process.env.NODE_ENV === "production" ? "none" : "lax"),
-      secure: process.env.NODE_ENV === "production" && process.env.SESSION_SECURE !== "false",
-      path: "/",
-    };
-    res.clearCookie("michemango.sid", opcionesCookie);
-    return res.json({ mensaje: "Sesión cerrada." });
-  });
 });
 
 module.exports = router;

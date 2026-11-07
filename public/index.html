@@ -114,6 +114,25 @@
             Escríbenos y prepara tu pedido.</p>
         <a class="button-link button-link--small" href="#pedido">Preparar pedido</a>
 
+        <form id="form-contacto" class="form-contacto">
+            <h3>Envíanos un mensaje</h3>
+            <label for="contacto-nombre">Nombre</label>
+            <input id="contacto-nombre" name="nombre" type="text" maxlength="80" autocomplete="name" required>
+
+            <label for="contacto-telefono">Teléfono</label>
+            <input id="contacto-telefono" name="telefono" type="tel" maxlength="25" autocomplete="tel">
+
+            <label for="contacto-correo">Correo</label>
+            <input id="contacto-correo" name="correo" type="email" maxlength="120" autocomplete="email">
+            <small>Déjanos un teléfono o un correo para responderte.</small>
+
+            <label for="contacto-mensaje">Mensaje</label>
+            <textarea id="contacto-mensaje" name="mensaje" rows="4" maxlength="1000" required></textarea>
+
+            <button class="contacto-button" type="submit">Enviar mensaje</button>
+            <p id="contacto-estado" class="contacto-estado" role="status" aria-live="polite"></p>
+        </form>
+
     </section>
 
     <footer>
@@ -173,5 +192,6 @@
     <script src="js/catalogo-respaldo.js"></script>
     <script src="js/catalogo.js"></script>
     <script src="js/chatbot.js"></script>
+    <script src="js/contacto.js"></script>
 </body>
 </html>
