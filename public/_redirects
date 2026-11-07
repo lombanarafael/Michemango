@@ -1,6 +1,2 @@
-# Al crear Render, sustituye el host del proxy de abajo por la URL asignada.
-# Ejemplo: /api/* https://TU-SERVICIO.onrender.com/api/:splat 200
-/api/* https://backend-url-pendiente.invalid/api/:splat 200
-
 # Permite servir la página principal para rutas estáticas desconocidas.
 /* /index.html 200
