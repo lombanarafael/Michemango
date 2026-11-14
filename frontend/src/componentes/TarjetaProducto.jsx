@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatCOP } from "../api.js";
+import ImagenProducto from "./ImagenProducto.jsx";
 
 // Tarjeta de un producto del catálogo: imagen, datos, cantidad y botón para agregar.
 // Recibe por props el producto y la función que lo agrega al pedido.
@@ -11,7 +12,7 @@ export default function TarjetaProducto({ producto, onAgregar }) {
 
   return (
     <article className="producto">
-      <div className="producto-imagen">{producto.imagen || "🥭"}</div>
+      <ImagenProducto producto={producto} />
       <span className="producto-categoria">{producto.categoria || "General"}</span>
       <h3>{producto.nombre}</h3>
       <p>{producto.descripcion}</p>

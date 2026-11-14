@@ -1,3 +1,5 @@
+import { IMAGENES } from "../ImagenProducto.jsx";
+
 // Formulario para crear o editar un producto. Si "producto.id" tiene valor, estamos editando.
 // Es un formulario "controlado": cada campo lee y escribe en el estado del panel.
 export default function FormProducto({ producto, setProducto, onGuardar, onCancelar }) {
@@ -20,8 +22,14 @@ export default function FormProducto({ producto, setProducto, onGuardar, onCance
           <input name="precio" type="number" min="1" step="1" value={producto.precio} onChange={cambiar("precio")} required />
         </label>
         <label>
-          Ícono o emoji
-          <input name="imagen" type="text" maxLength="10" value={producto.imagen} onChange={cambiar("imagen")} />
+          Imagen
+          <select name="imagen" value={producto.imagen} onChange={cambiar("imagen")}>
+            {Object.entries(IMAGENES).map(([clave, imagen]) => (
+              <option key={clave} value={clave}>{imagen.nombre}</option>
+            ))}
+            {/* Si el producto tenía un emoji antiguo, lo dejamos como opción para no perderlo. */}
+            {!IMAGENES[producto.imagen] && <option value={producto.imagen}>Emoji: {producto.imagen}</option>}
+          </select>
         </label>
       </div>
       <label>

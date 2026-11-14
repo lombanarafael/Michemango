@@ -5,7 +5,7 @@
     "categoria": "Clásicos",
     "precio": 15000,
     "descripcion": "Mango fresco, limón y chamoy: una combinación intensa y refrescante.",
-    "imagen": "🥭"
+    "imagen": "micheman"
   },
   {
     "id": 2,
@@ -13,7 +13,7 @@
     "categoria": "Premium",
     "precio": 18000,
     "descripcion": "Mango con gomitas, tajín y frutas para una experiencia más completa.",
-    "imagen": "✨"
+    "imagen": "premium"
   },
   {
     "id": 3,
@@ -21,7 +21,7 @@
     "categoria": "Picante",
     "precio": 20000,
     "descripcion": "Mango, maracuyá, chamoy y tajín en una mezcla tropical, ácida y picante.",
-    "imagen": "🌶️"
+    "imagen": "explosivo"
   },
   {
     "id": 4,
@@ -29,6 +29,6 @@
     "categoria": "Pequeños",
     "precio": 10000,
     "descripcion": "Porción pequeña de mango, limón y chamoy para un antojo lleno de sabor.",
-    "imagen": "🍋"
+    "imagen": "mini"
   }
 ]

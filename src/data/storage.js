@@ -168,6 +168,15 @@ function importarJsonSqlite(productos, solicitudes) {
   ).run("json-files-v1");
 }
 
+// Los cuatro productos iniciales tenían un emoji como imagen; ahora usan una ilustración.
+// Solo cambiamos los que todavía tienen el emoji original (si el admin lo editó, se respeta).
+const IMAGENES_NUEVAS = [
+  ["1", "🥭", "micheman"],
+  ["2", "✨", "premium"],
+  ["3", "🌶️", "explosivo"],
+  ["4", "🍋", "mini"],
+];
+
 async function inicializarAlmacenamiento() {
   if (!pool && !sqlite) {
     throw new Error("DATABASE_URL es obligatorio en producción para usar almacenamiento persistente.");
@@ -209,6 +218,8 @@ async function inicializarAlmacenamiento() {
     sqlite.exec("BEGIN");
     try {
       importarJsonSqlite(productos, solicitudes);
+      const actualizar = sqlite.prepare("UPDATE michemango_products SET imagen = ? WHERE id = ? AND imagen = ?");
+      for (const [id, emoji, clave] of IMAGENES_NUEVAS) actualizar.run(clave, id, emoji);
       sqlite.exec("COMMIT");
     } catch (error) {
       sqlite.exec("ROLLBACK");
@@ -256,6 +267,9 @@ async function inicializarAlmacenamiento() {
   try {
     await client.query("BEGIN");
     await importarJsonPostgres(client, productos, solicitudes);
+    for (const [id, emoji, clave] of IMAGENES_NUEVAS) {
+      await client.query("UPDATE michemango_products SET imagen = $1 WHERE id = $2 AND imagen = $3", [clave, id, emoji]);
+    }
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");

@@ -276,6 +276,43 @@ p {
     background: linear-gradient(135deg, rgba(255, 159, 28, 0.2), rgba(247, 209, 102, 0.4));
 }
 
+/* Ilustración del producto: ocupa todo el ancho de la tarjeta, arriba. */
+.producto-foto {
+    display: block;
+    width: calc(100% + 56px);
+    max-width: none;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    margin: -28px -28px 18px;
+    object-fit: cover;
+    transition: transform 300ms ease;
+}
+
+.producto::before {
+    z-index: 1;
+}
+
+.producto:hover .producto-foto {
+    transform: scale(1.05);
+}
+
+/* Imagen pequeña dentro del recomendador y en la tabla del panel. */
+.assistant-foto {
+    display: block;
+    width: 100%;
+    max-width: 140px;
+    height: auto;
+    margin: 4px 0;
+    border-radius: 16px;
+}
+
+.admin-foto {
+    display: block;
+    width: 72px;
+    height: auto;
+    border-radius: 10px;
+}
+
 .producto-categoria {
     display: inline-block;
     margin-bottom: 12px;
@@ -589,6 +626,7 @@ section:target {
 }
 
 .admin-product-form input,
+.admin-product-form select,
 .admin-product-form textarea {
     width: 100%;
     padding: 10px 12px;
@@ -1072,6 +1110,7 @@ section {
 .form-contacto textarea,
 .admin-product-form input,
 .admin-product-form textarea,
+.admin-product-form select,
 .admin-filter select,
 .assistant-form select {
     min-height: 46px;

@@ -7,7 +7,7 @@ import TablaSolicitudes from "../componentes/admin/TablaSolicitudes.jsx";
 // El token JWT que nos dio el login se guarda en el navegador (localStorage).
 const TOKEN_KEY = "michemango.adminToken";
 
-const PRODUCTO_VACIO = { id: "", nombre: "", categoria: "", precio: "", imagen: "🥭", descripcion: "" };
+const PRODUCTO_VACIO = { id: "", nombre: "", categoria: "", precio: "", imagen: "micheman", descripcion: "" };
 
 // Hace una petición a la API enviando el token en la cabecera Authorization.
 // Si no hay token o ya venció (401), mandamos al administrador de vuelta al login.
@@ -68,7 +68,7 @@ export default function AdminPanel() {
   }, [filtro]);
 
   function editarProducto(item) {
-    setProducto({ ...item, categoria: item.categoria || "General", precio: String(item.precio), imagen: item.imagen || "🥭" });
+    setProducto({ ...item, categoria: item.categoria || "General", precio: String(item.precio), imagen: item.imagen || "micheman" });
     document.getElementById("form-producto")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { formatCOP } from "../api.js";
 import { recomendarProducto } from "../recomendador.js";
+import ImagenProducto from "./ImagenProducto.jsx";
 
 // Botón "Ayúdame a elegir" + panel flotante con el recomendador.
 // Funciona en el navegador, así que responde al instante aunque el backend esté dormido.
@@ -8,6 +9,7 @@ export default function Recomendador({ productos, abierto, setAbierto, onAgregar
   const [recomendacion, setRecomendacion] = useState(null);
   const botonAbrir = useRef(null);
   const selectorSabor = useRef(null);
+  const resultado = useRef(null);
 
   function cerrar() {
     setAbierto(false);
@@ -24,6 +26,11 @@ export default function Recomendador({ productos, abierto, setAbierto, onAgregar
     document.addEventListener("keydown", cerrarConEscape);
     return () => document.removeEventListener("keydown", cerrarConEscape);
   }, [abierto]);
+
+  // Cuando aparece una recomendación, bajamos el panel para que se vea completa.
+  useEffect(() => {
+    if (recomendacion) resultado.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [recomendacion]);
 
   function enviarPreferencias(event) {
     event.preventDefault();
@@ -92,12 +99,13 @@ export default function Recomendador({ productos, abierto, setAbierto, onAgregar
           <button className="contacto-button" type="submit">Recomiéndame una miche</button>
         </form>
 
-        <div className={claseResultado} role="status" aria-live="polite">
+        <div ref={resultado} className={claseResultado} role="status" aria-live="polite">
           {recomendacion === false && "No encontramos productos para recomendar en este momento."}
           {recomendacion && (
             <>
               <span className="assistant-mode">Sugerencia según tus preferencias</span>
-              <h3>{recomendacion.imagen || "🥭"} {recomendacion.nombre}</h3>
+              <ImagenProducto producto={recomendacion} className="assistant-foto" />
+              <h3>{recomendacion.nombre}</h3>
               <p>Elegido según tus preferencias y los productos del catálogo.</p>
               <p>Precio actual: {formatCOP(recomendacion.precio)}</p>
               <button
