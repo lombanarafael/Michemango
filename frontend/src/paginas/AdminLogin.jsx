@@ -2,6 +2,8 @@ import { useState } from "react";
 import { apiFetchConDespertar } from "../api.js";
 import { ruta } from "../rutas.js";
 
+// Pantalla de ingreso. Si el usuario y la contraseña son correctos, el servidor devuelve
+// un token JWT (válido 8 horas) que guardamos en localStorage para usar en el panel.
 export default function AdminLogin() {
   const [mensaje, setMensaje] = useState({ texto: "", error: false });
   const [verificando, setVerificando] = useState(false);

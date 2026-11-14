@@ -1,3 +1,6 @@
+// Copia src/data/productos.json al frontend como "catálogo de respaldo".
+// Así la tienda muestra productos al instante, aunque el backend esté dormido o caído.
+// "npm run catalogo:sync" lo genera y "npm run catalogo:check" revisa que esté al día.
 const fs = require("fs");
 const path = require("path");
 

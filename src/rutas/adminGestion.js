@@ -57,6 +57,7 @@ router.delete("/solicitudes/:id", async (req, res) => {
   return res.json({ mensaje: "Solicitud eliminada." });
 });
 
+// CRUD de productos: leer, crear (POST), editar (PATCH) y eliminar (DELETE).
 router.get("/productos", async (req, res) => {
   res.json(await leerProductos());
 });

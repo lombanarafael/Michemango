@@ -1,3 +1,4 @@
+// Punto de entrada de React: monta el componente App dentro del <div id="root"> de index.html.
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";

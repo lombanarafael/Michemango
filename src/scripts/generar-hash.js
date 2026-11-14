@@ -1,3 +1,6 @@
+// Genera el hash bcrypt de la contraseña del administrador ("npm run admin:hash").
+// La contraseña se escribe oculta (sin mostrarse en pantalla) y solo se imprime el hash,
+// que es lo que se pega en ADMIN_PASSWORD_HASH (en .env o en Render).
 const bcrypt = require("bcryptjs");
 
 function leerContrasena(leyenda) {
@@ -62,6 +65,7 @@ async function main() {
       throw new Error("Las contraseñas no coinciden.");
     }
 
+    // 12 = "costo": cuántas vueltas hace bcrypt. Más alto es más lento de adivinar.
     const hash = await bcrypt.hash(contrasena, 12);
     process.stdout.write(`${hash}\n`);
   } finally {

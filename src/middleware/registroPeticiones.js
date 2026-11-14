@@ -1,3 +1,5 @@
+// Registra cada petición en la consola (método, ruta, código de respuesta y duración).
+// En Render se ve en la pestaña "Logs". Cada petición recibe un id para poder rastrearla.
 const { randomUUID } = require("crypto");
 
 function registroPeticiones(req, res, next) {

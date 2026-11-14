@@ -1,3 +1,7 @@
+// API del recomendador (POST /api/recomendaciones).
+// Usa las mismas reglas de puntos que frontend/src/recomendador.js. La página usa la versión
+// del navegador para responder al instante aunque Render esté dormido; esta ruta queda
+// disponible para otros clientes y para probar las reglas desde el servidor.
 const express = require("express");
 const { leerProductos } = require("../data/productos");
 const { limitarRecomendaciones } = require("../middleware/limitadores");

@@ -1,3 +1,5 @@
+// Autenticación del administrador con JWT (JSON Web Token).
+// El token es un texto firmado con JWT_SECRET: si alguien lo modifica, la firma ya no coincide.
 const jwt = require("jsonwebtoken");
 
 // Firmamos el token del administrador y hacemos que venza después de ocho horas.
@@ -9,6 +11,8 @@ function crearTokenAdmin(usuario) {
   );
 }
 
+// Middleware que protege las rutas del panel: si no llega un token válido, responde 401.
+// El navegador envía el token en la cabecera: Authorization: Bearer <token>
 function requiereAdminApi(req, res, next) {
   const autorizacion = req.get("Authorization") || "";
   const coincidencia = autorizacion.match(/^Bearer (.+)$/);

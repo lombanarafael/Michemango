@@ -12,6 +12,7 @@ const MAXIMO_CORREO = 120;
 const MAXIMO_TELEFONO = 25;
 const MAXIMO_MENSAJE = 1000;
 
+// Quita caracteres invisibles y espacios repetidos de lo que escribió la persona.
 function limpiarTexto(valor) {
   return typeof valor === "string"
     ? valor.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim()
@@ -112,6 +113,8 @@ router.post(["/contacto", "/solicitudes"], limitarSolicitudes, async (req, res) 
       }
     }
 
+    // Idempotency-Key: el navegador manda un id único por mensaje. Si por un corte de conexión
+    // el mismo mensaje llega dos veces, usamos ese id y la base de datos no lo duplica.
     const claveIdempotencia = req.get("Idempotency-Key");
     if (claveIdempotencia && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(claveIdempotencia)) {
       return res.status(400).json({ error: "La solicitud no tiene un identificador válido." });
