@@ -1,71 +1,33 @@
 // API del recomendador (POST /api/recomendaciones).
-// Usa las mismas reglas de puntos que frontend/src/recomendador.js. La página usa la versión
-// del navegador para responder al instante aunque Render esté dormido; esta ruta queda
-// disponible para otros clientes y para probar las reglas desde el servidor.
+// No repetimos la regla: usamos el mismo archivo que la página, frontend/src/recomendador.js.
+// La página calcula en el navegador para responder al instante aunque Render esté dormido;
+// esta ruta sirve para otros clientes y para probar las reglas desde el servidor.
 const express = require("express");
 const { leerProductos } = require("../data/productos");
 const { limitarRecomendaciones } = require("../middleware/limitadores");
+const { recomendarProducto, explicarRazones } = require("../../frontend/src/recomendador.js");
 
 const router = express.Router();
 const SABORES = ["dulce", "picante", "acido", "refrescante", "cualquiera"];
 const TAMANOS = ["pequeno", "mediano", "grande", "cualquiera"];
 const OCASIONES = ["antojo", "celebracion", "compartir", "regalo", "cualquiera"];
 
-function elegirPorReglas(productos, preferencias) {
-  const puntuados = productos.map((producto) => {
-    const texto = `${producto.nombre} ${producto.categoria} ${producto.descripcion}`.toLocaleLowerCase("es-CO");
-    let puntos = 0;
-
-    if (preferencias.sabor === "picante" && /picante|taj[ií]n|chamoy/.test(texto)) puntos += 4;
-    if (preferencias.sabor === "picante" && String(producto.categoria || "").toLocaleLowerCase("es-CO") === "picante") puntos += 2;
-    if (preferencias.sabor === "dulce" && /dulce|gomitas|fruta|premium/.test(texto)) puntos += 3;
-    if (preferencias.sabor === "acido" && /lim[oó]n|maracuy[aá]|[aá]cid/.test(texto)) puntos += 3;
-    if (preferencias.sabor === "refrescante" && /fresco|refrescante|lim[oó]n/.test(texto)) puntos += 3;
-    const esPequeno = /mini|pequeñ/.test(texto);
-    const esGrande = /premium|explosivo/.test(texto);
-    if (preferencias.tamano === "pequeno") puntos += esPequeno ? 4 : -1;
-    if (preferencias.tamano === "mediano") puntos += esPequeno ? -2 : esGrande ? 1 : 3;
-    if (preferencias.tamano === "grande") puntos += esGrande ? 4 : -1;
-    if (preferencias.ocasion === "celebracion") puntos += esGrande ? 3 : 0;
-    if (preferencias.ocasion === "compartir") puntos += esGrande ? 2 : 0;
-    if (preferencias.ocasion === "regalo") puntos += esGrande ? 3 : 0;
-    if (preferencias.ocasion === "antojo") puntos += esPequeno || /cl[aá]sico/.test(texto) ? 2 : 0;
-
-    return { producto, puntos };
-  });
-
-  return puntuados.sort((a, b) => b.puntos - a.puntos || a.producto.precio - b.producto.precio)[0];
-}
-
 router.post("/recomendaciones", limitarRecomendaciones, async (req, res) => {
-  const preferencias = req.body;
-  if (!preferencias || typeof preferencias !== "object" || Array.isArray(preferencias)) {
-    return res.status(400).json({ error: "Envía tus preferencias en formato válido." });
-  }
-
-  const sabor = typeof preferencias.sabor === "string" ? preferencias.sabor : "";
-  const tamano = typeof preferencias.tamano === "string" ? preferencias.tamano : "";
-  const ocasion = typeof preferencias.ocasion === "string" ? preferencias.ocasion : "";
+  const { sabor, tamano, ocasion } = req.body || {};
   if (!SABORES.includes(sabor) || !TAMANOS.includes(tamano) || !OCASIONES.includes(ocasion)) {
     return res.status(400).json({ error: "Elige una opción válida de sabor, tamaño y ocasión." });
   }
 
   try {
     const productos = await leerProductos();
-    if (productos.length === 0) {
+    const resultado = recomendarProducto(productos, { sabor, tamano, ocasion });
+    if (!resultado) {
       return res.status(503).json({ error: "El catálogo está vacío; no hay productos para recomendar." });
     }
-
-    const sugerencia = elegirPorReglas(productos, { sabor, tamano, ocasion });
-    const seleccion = {
-      producto: sugerencia.producto,
-      motivo: "Elegido según tus preferencias y los datos disponibles del catálogo.",
-    };
-
     return res.json({
-      ...seleccion,
+      producto: resultado.producto,
+      motivo: explicarRazones(resultado.razones),
       modo: "reglas",
-      aviso: "Sugerencia basada en tus preferencias y en el catálogo MicheMango.",
     });
   } catch (error) {
     console.error("No se pudo generar la recomendación.", error.code || error.name);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { formatCOP } from "../api.js";
-import { recomendarProducto } from "../recomendador.js";
+import { explicarRazones, recomendarProducto } from "../recomendador.js";
 import ImagenProducto from "./ImagenProducto.jsx";
 
 // Botón "Ayúdame a elegir" + panel flotante con el recomendador.
@@ -35,12 +35,15 @@ export default function Recomendador({ productos, abierto, setAbierto, onAgregar
   function enviarPreferencias(event) {
     event.preventDefault();
     const datos = new FormData(event.currentTarget);
-    const producto = recomendarProducto(productos, {
+    const resultadoReglas = recomendarProducto(productos, {
       sabor: datos.get("sabor"),
       tamano: datos.get("tamano"),
       ocasion: datos.get("ocasion"),
     });
-    setRecomendacion(producto || false);
+    // Guardamos el producto junto con la frase que explica la recomendación.
+    setRecomendacion(resultadoReglas
+      ? { ...resultadoReglas.producto, motivo: explicarRazones(resultadoReglas.razones) }
+      : false);
   }
 
   let claseResultado = "assistant-result";
@@ -106,7 +109,7 @@ export default function Recomendador({ productos, abierto, setAbierto, onAgregar
               <span className="assistant-mode">Sugerencia según tus preferencias</span>
               <ImagenProducto producto={recomendacion} className="assistant-foto" />
               <h3>{recomendacion.nombre}</h3>
-              <p>Elegido según tus preferencias y los productos del catálogo.</p>
+              <p>{recomendacion.motivo}</p>
               <p>Precio actual: {formatCOP(recomendacion.precio)}</p>
               <button
                 className="pedido-button"
