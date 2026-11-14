@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import catalogoRespaldo from "../data/catalogo-respaldo.json";
 import { apiFetch } from "../api.js";
-import { ruta } from "../rutas.js";
 import Encabezado from "../componentes/Encabezado.jsx";
 import Inicio from "../componentes/Inicio.jsx";
 import Nosotros from "../componentes/Nosotros.jsx";
@@ -93,8 +92,9 @@ export default function Tienda() {
       </main>
 
       <footer>
-        <p>© 2026 MicheMango - Todos los derechos reservados.</p>
-        <a className="admin-back-link" href={ruta("/admin/login")}>Acceso administrativo</a>
+        <p className="footer-marca">🥭 MicheMango</p>
+        <p>Miches de mango hechas con amor en Barranquilla.</p>
+        <p className="footer-copy">© 2026 MicheMango - Todos los derechos reservados.</p>
       </footer>
 
       <Recomendador
