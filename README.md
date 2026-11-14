@@ -1,16 +1,16 @@
 # MicheMango
 
-Catálogo web para el emprendimiento MicheMango de Barranquilla. El sitio estático vive en `public/`; Express y su API se ejecutan desde `src/`. El catálogo, las solicitudes, el panel de administración y un asistente para elegir miches están conectados al backend.
+Catálogo web para el emprendimiento MicheMango de Barranquilla. El frontend en React vive en `frontend/` y se compila a `dist/`; Express y su API se ejecutan desde `src/`. El catálogo, las solicitudes, el panel de administración y un asistente para elegir miches están conectados al backend.
 
 ## Estructura
 
 ```text
-public/
+frontend/
   index.html
-  admin/{login.html,panel.html}
-  css/styles.css
-  js/{config.js,menu.js,animaciones.js,catalogo-respaldo.js,catalogo.js,chatbot.js}
-  js/admin/{login.js,panel.js}
+  src/{App.jsx,Storefront.jsx,AdminLogin.jsx,AdminPanel.jsx,api.js,styles.css}
+  src/data/catalogo-respaldo.json
+vite.config.mjs
+dist/                         # compilación generada por Vite
 src/
   server.js
   productos.js
@@ -23,7 +23,7 @@ package.json
 .env.example
 ```
 
-`public/js/chatbot.js` controla el recomendador. Las sugerencias se calculan en el navegador con reglas propias, según sabor, tamaño y ocasión, y usan el catálogo de respaldo; por eso funcionan aunque el backend esté dormido o no disponible. No se hacen llamadas a servicios externos ni se necesita una clave de IA. La sección de contacto permite enviar mensajes al backend.
+El componente React del recomendador calcula sugerencias en el navegador con reglas propias, según sabor, tamaño y ocasión, y usa el catálogo de respaldo; por eso funciona aunque el backend esté dormido o no disponible. No se hacen llamadas a servicios externos ni se necesita una clave de IA. La sección de contacto permite enviar mensajes al backend.
 
 ## Requisitos y ejecución local
 
@@ -31,19 +31,21 @@ Requiere Node.js 22.13 o superior y npm. Desde PowerShell en la raíz:
 
 ```powershell
 Copy-Item .env.example .env
-npm install
-npm run admin:hash
+npm.cmd install
+npm.cmd run admin:hash
 ```
 
 Escribe y confirma una contraseña nueva en la terminal (no se muestra); el comando imprime únicamente su hash bcrypt. Copia ese hash a `ADMIN_PASSWORD_HASH` en `.env`. Elige un usuario administrativo y genera una clave para `JWT_SECRET` con `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. No pongas la contraseña en argumentos de comandos ni la guardes en el repositorio. `ADMIN_USER` y `ADMIN_USERNAME` son alias; configura solo uno.
 
 ```powershell
-npm run dev
-# o modo normal:
-npm start
+npm.cmd run build
+# Terminal 1:
+npm.cmd run dev
+# Terminal 2:
+npm.cmd run dev:frontend
 ```
 
-El sitio de desarrollo estará en `http://localhost:3000/`; comprueba `http://localhost:3000/api/health`. `npm run check` comprueba la sintaxis y que el catálogo de respaldo siga sincronizado. `npm run test:smoke` prueba el formulario, el login JWT sin cookies, las rutas protegidas y la persistencia tras reiniciar. `npm run db:init` crea el esquema y aplica la importación inicial; también se ejecuta al arrancar el servidor. Si pones la URI de Neon en `DATABASE_URL`, se usa PostgreSQL tanto en local como en producción. Sin esa variable en desarrollo, se usa SQLite en `src/data/michemango.sqlite`. PostgreSQL es obligatorio en producción. Los archivos SQLite locales se excluyen de Git.
+El frontend de desarrollo estará en `http://localhost:5173/`; comprueba la API en `http://localhost:3000/api/health`. También puedes ejecutar `npm run build` y luego `npm start` para servir la aplicación compilada desde Express en el puerto `3000`. `npm run check` comprueba la sintaxis del backend, que el catálogo de respaldo esté sincronizado y que React compile. `npm run test:smoke` prueba el formulario, el login JWT sin cookies, las rutas protegidas y la persistencia tras reiniciar. `npm run db:init` crea el esquema y aplica la importación inicial; también se ejecuta al arrancar el servidor. Si pones la URI de Neon en `DATABASE_URL`, se usa PostgreSQL tanto en local como en producción. Sin esa variable en desarrollo, se usa SQLite en `src/data/michemango.sqlite`. PostgreSQL es obligatorio en producción. Los archivos SQLite locales se excluyen de Git.
 
 ## Variables privadas del backend
 
@@ -64,7 +66,7 @@ El archivo `.env.example` solo contiene valores de ejemplo. `.gitignore` excluye
 
 ## Catálogo y fuente de precios
 
-`src/data/productos.json` es la fuente canónica de los cuatro productos iniciales y sus precios. Ejecuta `npm run catalogo:sync` para generar `public/js/catalogo-respaldo.js`; no edites ese archivo generado a mano. El frontend muestra esos productos inmediatamente y luego intenta actualizar el catálogo desde `GET /api/productos` durante un máximo de 2,5 segundos. Si el backend está caído, lento o devuelve un error, se conserva el catálogo de respaldo y los pedidos por WhatsApp siguen disponibles. Si cambias los productos o precios oficiales en `src/data/productos.json`, regenera el respaldo y publica el frontend junto con el backend. Las modificaciones administrativas guardadas en la base se reflejan cuando la API responde; el respaldo estático representa el catálogo canónico incluido en el proyecto.
+`src/data/productos.json` es la fuente canónica de los cuatro productos iniciales y sus precios. Ejecuta `npm run catalogo:sync` para generar `frontend/src/data/catalogo-respaldo.json`; no edites ese archivo generado a mano. El frontend muestra esos productos inmediatamente y luego intenta actualizar el catálogo desde `GET /api/productos` durante un máximo de 2,5 segundos. Si el backend está caído, lento o devuelve un error, se conserva el catálogo de respaldo y los pedidos por WhatsApp siguen disponibles. Si cambias los productos o precios oficiales en `src/data/productos.json`, regenera el respaldo y publica el frontend junto con el backend. Las modificaciones administrativas guardadas en la base se reflejan cuando la API responde; el respaldo estático representa el catálogo canónico incluido en el proyecto.
 
 ## PostgreSQL y persistencia
 
@@ -110,7 +112,7 @@ El login compara la contraseña con bcrypt y devuelve un JWT válido durante och
 
 ### Conexión entre frontend y API
 
-`public/js/config.js` guarda la dirección del backend en `apiBasePublicada`; el formulario envía `POST /api/contacto` a esa dirección. CORS permite Netlify, GitHub Pages y localhost, con orígenes exactos y sin barras finales. Si cambia la dirección del sitio en GitHub Pages, actualiza `GITHUB_PAGES_ORIGIN` y `CORS_ORIGINS` en Render.
+El frontend lee la dirección del backend desde `VITE_API_BASE_URL` o usa el valor de respaldo en `frontend/src/api.js`; el formulario envía `POST /api/contacto` a esa dirección. CORS permite Netlify, GitHub Pages y localhost, con orígenes exactos y sin barras finales. Si cambia la dirección del sitio en GitHub Pages, actualiza `GITHUB_PAGES_ORIGIN` y `CORS_ORIGINS` en Render.
 
 ## Asistente de producto
 
@@ -118,7 +120,7 @@ El recomendador pregunta por sabor, tamaño y ocasión y aplica reglas determini
 
 ## WhatsApp y precios vigentes
 
-`public/js/config.js` tiene el número internacional de WhatsApp obtenido del sitio original del proyecto. Es un único valor usado por el botón flotante, el contacto y el pedido. Los precios actuales residen en `src/data/productos.json` para sembrar la base nueva y luego en la base activa; frontend y recomendador leen el catálogo vigente desde el servidor. No mantengas otra copia de precios en los archivos públicos. El pedido solo abre un borrador de WhatsApp; no registra una venta ni confirma que se haya enviado.
+`frontend/src/api.js` tiene el número internacional de WhatsApp configurado para el negocio. Es un único valor usado por el botón flotante, el contacto y el pedido. Los precios actuales residen en `src/data/productos.json` para sembrar la base nueva y luego en la base activa; frontend y recomendador leen el catálogo vigente desde el servidor. El pedido solo abre un borrador de WhatsApp; no registra una venta ni confirma que se haya enviado.
 
 ## Publicar gratis en Netlify, Render y Neon
 
@@ -135,13 +137,13 @@ El sitio estático usa Netlify Free con el subdominio existente `michemango.netl
 
 Los límites pueden cambiar. La documentación pública de Netlify no asegura que todos los procesos de alta pidan o no tarjeta; el sitio ya está creado, así que conserva el plan Free actual y no ingreses datos de pago si el panel los solicita.
 
-1. **Conserva Netlify Free.** Mantén el sitio en `michemango.netlify.app`, publica `public/` y no compres dominio ni actives auto-recarga o funciones pagas. La documentación actual indica 300 créditos mensuales con un límite estricto para Free: cuando se agotan, los sitios se pausan hasta el siguiente ciclo; no habilites upgrades. Algunos equipos antiguos tienen planes heredados con condiciones diferentes, así que verifica **Billing** y confirma que siga siendo Free. Fuentes: [créditos de Netlify](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/how-credits-work/) y [FAQ de facturación](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/billing-faq-for-credit-based-plans/). La documentación no garantiza que todos los flujos de alta de cuentas sean libres de pedir tarjeta; no añadas información de pago y detente si Netlify la solicita.
+1. **Conserva Netlify Free.** Mantén el sitio en `michemango.netlify.app`, usa `npm run build` como comando de compilación y `dist` como carpeta publicada (ya están definidos en [netlify.toml](./netlify.toml)); no compres dominio ni actives auto-recarga o funciones pagas. La documentación actual indica 300 créditos mensuales con un límite estricto para Free: cuando se agotan, los sitios se pausan hasta el siguiente ciclo; no habilites upgrades. Algunos equipos antiguos tienen planes heredados con condiciones diferentes, así que verifica **Billing** y confirma que siga siendo Free. Fuentes: [créditos de Netlify](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/how-credits-work/) y [FAQ de facturación](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/billing-faq-for-credit-based-plans/). La documentación no garantiza que todos los flujos de alta de cuentas sean libres de pedir tarjeta; no añadas información de pago y detente si Netlify la solicita.
 2. **Comprueba Render Free.** El Web Service configurado en [render.yaml](./render.yaml) usa `plan: free`. Render documenta que duerme tras 15 minutos sin tráfico, tarda alrededor de un minuto en volver y tiene un sistema de archivos efímero. El cupo incluye 750 horas de instancia por espacio de trabajo y mes. Si se agota el ancho de banda, las horas o el límite de compilación, Render puede suspender el servicio o impedir nuevos despliegues. Si no agregas método de pago, Render dice que suspenderá los servicios cuando el uso pudiera generar cargos. No agregues tarjeta ni cambies a un plan pago. Detalles: [Render Free](https://render.com/docs/free) y [FAQ de Render](https://render.com/docs/faq).
 3. **Crea la base gratuita en Neon.** Usa el plan Free permanente, no una prueba. Según su [página oficial](https://neon.com/pricing), no pide tarjeta. Mantente dentro de 1 GB por proyecto (20 GB total por cuenta), 100 CU-horas y 5 GB de transferencia por proyecto al mes; el cómputo se duerme tras 5 minutos y se reactiva al recibir consultas. Free incluye una instantánea manual y una ventana de recuperación de seis horas (hasta 1 GB de historial), pero no copias programadas. Exporta los datos importantes por tu cuenta. Fuentes: [planes Neon](https://neon.com/docs/introduction/plans) y [scale-to-zero](https://neon.com/docs/introduction/scale-to-zero). No añadas método de pago.
 4. En Neon crea el proyecto y copia desde **Connect** la URI PostgreSQL con pooler. No la publiques. Pégala como `DATABASE_URL` en tu `.env` para usar la misma base en local.
 5. En Render crea un **Blueprint** desde este repositorio con [render.yaml](./render.yaml); el servicio debe decir **Free**. En sus variables privadas configura `DATABASE_URL`, `ADMIN_USER` y el hash bcrypt `ADMIN_PASSWORD_HASH`; Render genera `JWT_SECRET`. Conserva `NODE_ENV=production`, `FRONTEND_ORIGIN=https://michemango.netlify.app` y `CORS_ORIGINS` como aparecen en el Blueprint. No configures otros servicios ni agregues tarjeta.
-6. Despliega el servicio y copia la URL HTTPS exacta que Render asigne. Pégala en `apiBasePublicada` en [public/js/config.js](./public/js/config.js), publica los cambios del frontend y verifica `<URL-REAL-DEL-SERVICIO>/api/health`.
-7. En Netlify conserva el plan **Free**, el subdominio `michemango.netlify.app` y la carpeta publicada `public`. No configures dominio propio ni actives auto-recarga ni funciones pagas. Comprueba el formulario y el admin desde la página publicada.
+6. Despliega el servicio y copia la URL HTTPS exacta que Render asigne. Configura esa URL como `VITE_API_BASE_URL` en las variables de entorno de compilación de Netlify y Render, o actualiza el valor de respaldo en [api.js](./frontend/src/api.js); publica los cambios del frontend y verifica `<URL-REAL-DEL-SERVICIO>/api/health`.
+7. En Netlify conserva el plan **Free**, el subdominio `michemango.netlify.app` y la carpeta publicada `dist`. No configures dominio propio ni actives auto-recarga ni funciones pagas. Comprueba el formulario y el admin desde la página publicada.
 8. Envía una solicitud de prueba, inicia sesión, confirma que aparece en el panel y recarga para comprobar que persiste en Neon. La ruta administrativa sin token debe devolver `401`.
 
 El frontend no debe escribir datos persistentes en el disco de Render: su sistema de archivos se borra al reiniciar, desplegar o dormir. El código usa SQLite solo en desarrollo local y exige `DATABASE_URL` en producción. No uses el PostgreSQL gratuito de Render, que expira a los 30 días. Si se alcanza un límite gratuito, los sitios o el servicio pueden detenerse o suspenderse; no añadas tarjeta para sortearlo. Los límites, términos y créditos de cada proveedor pueden cambiar: comprueba siempre el panel y los enlaces oficiales antes de aceptar cambios.
@@ -152,7 +154,7 @@ El frontend se publica solo en Netlify; el repositorio ya no activa una publicac
 
 - [ ] Crear Neon Free y Render Web Service Free; comprobar que no se agregó método de pago.
 - [ ] Completar `DATABASE_URL`, usuario y hash del administrador en Render.
-- [ ] Copiar la URL real de Render en `apiBasePublicada` dentro de `public/js/config.js`.
+- [ ] Configurar `VITE_API_BASE_URL` con la URL real de Render en los entornos de compilación del frontend.
 - [ ] Probar catálogo, formulario, login y persistencia desde Netlify en Chrome, Edge y móvil.
 - [ ] Revisar cada estado y el borrador de WhatsApp; el borrador no confirma una compra.
 

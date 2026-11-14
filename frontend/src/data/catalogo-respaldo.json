@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "nombre": "Micheman",
+    "categoria": "Clásicos",
+    "precio": 15000,
+    "descripcion": "Mango fresco, limón y chamoy: una combinación intensa y refrescante.",
+    "imagen": "🥭"
+  },
+  {
+    "id": 2,
+    "nombre": "Miche Premium",
+    "categoria": "Premium",
+    "precio": 18000,
+    "descripcion": "Mango con gomitas, tajín y frutas para una experiencia más completa.",
+    "imagen": "✨"
+  },
+  {
+    "id": 3,
+    "nombre": "Mango Explosivo",
+    "categoria": "Picante",
+    "precio": 20000,
+    "descripcion": "Mango, maracuyá, chamoy y tajín en una mezcla tropical, ácida y picante.",
+    "imagen": "🌶️"
+  },
+  {
+    "id": 4,
+    "nombre": "Mini Miche",
+    "categoria": "Pequeños",
+    "precio": 10000,
+    "descripcion": "Porción pequeña de mango, limón y chamoy para un antojo lleno de sabor.",
+    "imagen": "🍋"
+  }
+]

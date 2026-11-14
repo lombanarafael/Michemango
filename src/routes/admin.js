@@ -1,18 +1,16 @@
-// Estas rutas muestran el acceso y las páginas privadas del panel de administración.
+// Estas rutas cargan la SPA de React; los datos privados siguen protegidos por JWT.
 const express = require("express");
 const path = require("path");
 
 const router = express.Router();
-const ARCHIVO_LOGIN = path.join(__dirname, "..", "..", "public", "admin", "login.html");
-const ARCHIVO_PANEL = path.join(__dirname, "..", "..", "public", "admin", "panel.html");
+const ARCHIVO_APP = path.join(__dirname, "..", "..", "dist", "index.html");
 
-// Las páginas son públicas; sus datos siguen protegidos por el token JWT de la API.
 router.get("/login", (req, res) => {
-  return res.sendFile(ARCHIVO_LOGIN);
+  return res.sendFile(ARCHIVO_APP);
 });
 
 router.get("/", (req, res) => {
-  res.sendFile(ARCHIVO_PANEL);
+  res.sendFile(ARCHIVO_APP);
 });
 
 module.exports = router;

@@ -6,12 +6,14 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
+    "dev:frontend": "vite --host 0.0.0.0",
+    "build": "vite build",
     "db:init": "node src/scripts/init-db.js",
     "admin:hash": "node src/scripts/hash-password.js",
     "catalogo:sync": "node src/scripts/generate-catalogo-respaldo.js",
     "catalogo:check": "node src/scripts/generate-catalogo-respaldo.js --check",
     "test:smoke": "node src/scripts/smoke-test.js",
-    "check": "node --check src/server.js && node --check src/productos.js && node --check src/data/storage.js && node --check src/data/solicitudes.js && node --check src/scripts/init-db.js && node --check src/scripts/hash-password.js && node --check src/scripts/generate-catalogo-respaldo.js && node --check src/scripts/smoke-test.js && node --check src/middleware/requiereAdmin.js && node --check src/middleware/rateLimiters.js && node --check src/middleware/requestLogger.js && node --check src/routes/contacto.js && node --check src/routes/adminApi.js && node --check src/routes/adminAuth.js && node --check src/routes/recomendador.js && node --check src/routes/admin.js && node --check public/js/config.js && node --check public/js/catalogo-respaldo.js && node --check public/js/menu.js && node --check public/js/animaciones.js && node --check public/js/catalogo.js && node --check public/js/chatbot.js && node --check public/js/contacto.js && node --check public/js/admin/login.js && node --check public/js/admin/panel.js && npm run catalogo:check"
+    "check": "node --check src/server.js && node --check src/productos.js && node --check src/data/storage.js && node --check src/data/solicitudes.js && node --check src/scripts/init-db.js && node --check src/scripts/hash-password.js && node --check src/scripts/generate-catalogo-respaldo.js && node --check src/scripts/smoke-test.js && node --check src/middleware/requiereAdmin.js && node --check src/middleware/rateLimiters.js && node --check src/middleware/requestLogger.js && node --check src/routes/contacto.js && node --check src/routes/adminApi.js && node --check src/routes/adminAuth.js && node --check src/routes/recomendador.js && node --check src/routes/admin.js && npm run catalogo:check && npm run build"
   },
   "repository": {
     "type": "git",
@@ -34,6 +36,12 @@
     "express-rate-limit": "^8.7.1",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.3.0",
+    "vite": "^8.3.8"
   }
 }

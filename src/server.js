@@ -20,13 +20,15 @@ const helmet = require("helmet");
 const path = require("path");
 const requestLogger = require("./middleware/requestLogger");
 
-// Creamos la aplicación y ubicamos la carpeta pública del sitio.
+// Creamos la aplicación y ubicamos la compilación de React.
 const app = express();
 const PUERTO = process.env.PORT || 3000;
-const CARPETA_PUBLICA = path.join(__dirname, "..", "public");
+const CARPETA_PUBLICA = path.join(__dirname, "..", "dist");
 const origenesLocales = [
   "http://localhost:5500",
   "http://127.0.0.1:5500",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
 ];
@@ -195,6 +197,15 @@ app.get("/api/productos", async (req, res) => {
 // Contestamos con JSON cuando se solicita una ruta de API que no existe.
 app.use("/api", (req, res) => {
   res.status(404).json({ error: "La ruta de la API no existe." });
+});
+
+app.use((req, res, next) => {
+  if (req.method !== "GET") {
+    return next();
+  }
+  return res.sendFile(path.join(CARPETA_PUBLICA, "index.html"), (error) => {
+    if (error) next(error);
+  });
 });
 
 // Informamos claramente si el cuerpo JSON enviado por el navegador no se puede leer.

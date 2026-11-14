@@ -1,4 +1,5 @@
 node_modules/
+/dist/
 /src/data/solicitudes.json
 /src/data/solicitudes.*.tmp
 /src/data/productos.*.tmp
