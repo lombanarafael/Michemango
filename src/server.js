@@ -1,177 +1,91 @@
-// Cargamos la configuración privada del archivo .env antes de iniciar Express.
+// Servidor principal de MicheMango (Express).
+// Leemos la configuración privada del archivo .env (en Render se configura en el panel).
 require("dotenv").config();
 
-// Importamos Express, las rutas y la fuente de datos del catálogo.
+const path = require("path");
 const express = require("express");
+const helmet = require("helmet");
 const { leerProductos } = require("./productos");
-const {
-  pool,
-  sqlite,
-  inicializarAlmacenamiento,
-  cerrarAlmacenamiento,
-  modoAlmacenamiento,
-} = require("./data/storage");
+const { consulta, inicializarAlmacenamiento, cerrarAlmacenamiento, modoAlmacenamiento } = require("./data/storage");
+const requestLogger = require("./middleware/requestLogger");
 const contactoRouter = require("./routes/contacto");
-const adminRouter = require("./routes/admin");
+const recomendadorRouter = require("./routes/recomendador");
 const adminAuthRouter = require("./routes/adminAuth");
 const adminApiRouter = require("./routes/adminApi");
-const recomendadorRouter = require("./routes/recomendador");
-const helmet = require("helmet");
-const path = require("path");
-const requestLogger = require("./middleware/requestLogger");
 
-// Creamos la aplicación y ubicamos la compilación de React.
 const app = express();
 const PUERTO = process.env.PORT || 3000;
-const CARPETA_PUBLICA = path.join(__dirname, "..", "dist");
-const origenesLocales = [
-  "http://localhost:5500",
-  "http://127.0.0.1:5500",
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-];
-const sitiosPublicados = [
-  process.env.FRONTEND_ORIGIN,
-  process.env.GITHUB_PAGES_ORIGIN,
-].filter(Boolean);
-const origenesCORS = (process.env.CORS_ORIGINS || "")
-  .split(",")
-  .map((origen) => origen.trim())
-  .filter(Boolean);
-const origenesPermitidos = new Set([...origenesLocales, ...origenesCORS]);
+const CARPETA_FRONTEND = path.join(__dirname, "..", "dist"); // React compilado con "npm run build"
 
-// Evitamos iniciar el panel si faltan sus credenciales o la clave para firmar tokens.
-if (!(process.env.ADMIN_USERNAME || process.env.ADMIN_USER) || !process.env.ADMIN_PASSWORD_HASH) {
-  throw new Error("Configura ADMIN_USER (o ADMIN_USERNAME) y ADMIN_PASSWORD_HASH en el entorno.");
+// 1) Revisamos que existan las variables obligatorias. Si falta alguna, el servidor no arranca.
+const ADMIN_USER = process.env.ADMIN_USER || process.env.ADMIN_USERNAME;
+if (!ADMIN_USER || !/^\$2[aby]\$\d{2}\$/.test(process.env.ADMIN_PASSWORD_HASH || "")) {
+  throw new Error("Configura ADMIN_USER y ADMIN_PASSWORD_HASH (un hash bcrypt) en el entorno.");
 }
-
-if (!/^\$2[aby]\$\d{2}\$/.test(process.env.ADMIN_PASSWORD_HASH)) {
-  throw new Error("ADMIN_PASSWORD_HASH debe contener un hash bcrypt válido.");
-}
-
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   throw new Error("JWT_SECRET debe tener al menos 32 caracteres.");
 }
-
 if (process.env.NODE_ENV === "production" && !process.env.DATABASE_URL) {
   throw new Error("Configura DATABASE_URL en producción para conservar solicitudes y productos.");
 }
 
-if (process.env.NODE_ENV === "production" && (!process.env.FRONTEND_ORIGIN || !process.env.GITHUB_PAGES_ORIGIN)) {
-  throw new Error("Configura FRONTEND_ORIGIN y GITHUB_PAGES_ORIGIN en producción.");
-}
+// 2) CORS: lista de sitios web que pueden llamar a esta API desde el navegador.
+const ORIGENES_PERMITIDOS = new Set([
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
+  "http://localhost:5173", // Vite en desarrollo
+  "http://127.0.0.1:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  process.env.FRONTEND_ORIGIN, // Netlify
+  process.env.GITHUB_PAGES_ORIGIN, // GitHub Pages
+  ...(process.env.CORS_ORIGINS || "").split(",").map((origen) => origen.trim()),
+].filter(Boolean));
 
-sitiosPublicados.forEach((origen) => {
-  let url;
-  try {
-    url = new URL(origen);
-  } catch {
-    throw new Error("FRONTEND_ORIGIN y GITHUB_PAGES_ORIGIN deben ser direcciones HTTPS válidas.");
-  }
-  if (
-    url.origin !== origen ||
-    (process.env.NODE_ENV === "production" && url.protocol !== "https:")
-  ) {
-    throw new Error("Los sitios publicados deben ser orígenes exactos, sin ruta ni barra final.");
-  }
-});
-
-origenesCORS.forEach((origen) => {
-  let url;
-  try {
-    url = new URL(origen);
-  } catch {
-    throw new Error(`CORS_ORIGINS contiene un origen inválido: ${origen}`);
-  }
-
-  const esLocal = origenesLocales.includes(origen);
-  const esSitioPublicado = sitiosPublicados.includes(origen);
-  if (!esLocal && !esSitioPublicado) {
-    throw new Error(`CORS_ORIGINS solo puede incluir los sitios publicados y localhost: ${origen}`);
-  }
-  if (
-    url.origin !== origen ||
-    !["http:", "https:"].includes(url.protocol) ||
-    (process.env.NODE_ENV === "production" && !esLocal && url.protocol !== "https:")
-  ) {
-    throw new Error(`Cada origen CORS debe ser exacto y no llevar barra final: ${origen}`);
-  }
-});
-
-if (process.env.NODE_ENV === "production" && sitiosPublicados.some((origen) => !origenesPermitidos.has(origen))) {
-  throw new Error("CORS_ORIGINS debe incluir Netlify y GitHub Pages.");
-}
-
-// Si hay un proxy HTTPS al desplegar, Express podrá reconocer la conexión segura.
+// Render pone un proxy HTTPS delante; así Express conoce la IP real (la usa el límite de peticiones).
 if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
 
-// Añadimos cabeceras de seguridad y un registro sencillo de peticiones.
-app.use(requestLogger);
-app.use(helmet({
+// 3) Middlewares: se ejecutan en orden para cada petición.
+app.use(requestLogger); // registra método, ruta, estado y duración
+app.use(helmet({ // cabeceras de seguridad HTTP
   contentSecurityPolicy: {
     directives: {
-      connectSrc: ["'self'", ...origenesPermitidos],
+      connectSrc: ["'self'", ...ORIGENES_PERMITIDOS],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
     },
   },
 }));
 
-// Solo permitimos el sitio publicado y los orígenes locales de desarrollo.
 app.use((req, res, next) => {
   const origen = req.get("Origin");
-
-  if (!origen) {
-    return next();
-  }
-
-  if (!origenesPermitidos.has(origen)) {
+  if (!origen) return next(); // peticiones sin navegador (curl, Render) no envían Origin
+  if (!ORIGENES_PERMITIDOS.has(origen)) {
     return res.status(403).json({ error: "Este origen no tiene permiso para usar la API." });
   }
   res.setHeader("Access-Control-Allow-Origin", origen);
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Idempotency-Key, Authorization");
   res.setHeader("Vary", "Origin");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-
+  if (req.method === "OPTIONS") return res.sendStatus(204); // respuesta a la "pregunta previa" del navegador
   return next();
 });
 
-// Servimos el frontend para pruebas locales y las vistas administrativas estáticas.
-app.use(express.static(CARPETA_PUBLICA));
+app.use(express.static(CARPETA_FRONTEND));
+app.use(express.json({ limit: "10kb" })); // leemos JSON pequeños (formularios)
 
-// Permitimos recibir datos JSON para el formulario y el inicio de sesión.
-app.use(express.json({ limit: "10kb" }));
-
-// Conectamos las rutas del formulario, acceso y administración.
+// 4) Rutas de la API.
 app.use("/api", contactoRouter);
 app.use("/api", recomendadorRouter);
 app.use("/api/admin", adminAuthRouter);
-app.use("/admin", adminRouter);
 app.use("/api/admin", adminApiRouter);
 
+// Prueba de salud: el frontend la usa para saber si Render ya despertó.
 app.get("/api/health", async (req, res) => {
   try {
-    if (pool) {
-      await pool.query("SELECT 1");
-    } else if (modoAlmacenamiento() === "sqlite-local") {
-      sqlite.prepare("SELECT 1 AS ok").get();
-    } else {
-      return res.status(503).json({
-        status: "unavailable",
-        storage: "unavailable",
-        database: "unavailable",
-        error: "La base de datos no está configurada.",
-      });
-    }
-
+    await consulta("SELECT 1 AS ok");
     return res.json({ status: "ok", storage: modoAlmacenamiento(), database: "connected" });
   } catch (error) {
     console.error("La comprobación de salud no pudo acceder a la base de datos.", error.code || error.name);
@@ -184,55 +98,44 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// Conservamos la ruta del catálogo disponible desde el primer servidor.
+// Catálogo público.
 app.get("/api/productos", async (req, res) => {
   try {
     return res.json(await leerProductos());
   } catch (error) {
-    console.error("No se pudo cargar el catálogo:", error.message);
+    console.error("No se pudo cargar el catálogo.", error.code || error.name);
     return res.status(500).json({ error: "No se pudo cargar el catálogo en este momento." });
   }
 });
 
-// Contestamos con JSON cuando se solicita una ruta de API que no existe.
 app.use("/api", (req, res) => {
   res.status(404).json({ error: "La ruta de la API no existe." });
 });
 
-app.use((req, res, next) => {
-  if (req.method !== "GET") {
-    return next();
-  }
-  return res.sendFile(path.join(CARPETA_PUBLICA, "index.html"), (error) => {
+// Cualquier otra página (/, /admin, /admin/login) la resuelve React: enviamos index.html.
+app.get(/.*/, (req, res, next) => {
+  res.sendFile(path.join(CARPETA_FRONTEND, "index.html"), (error) => {
     if (error) next(error);
   });
 });
 
-// Informamos claramente si el cuerpo JSON enviado por el navegador no se puede leer.
+// 5) Manejo de errores: respondemos un mensaje claro sin mostrar detalles internos.
 app.use((error, req, res, next) => {
   if (error.type === "entity.parse.failed") {
     return res.status(400).json({ error: "Los datos enviados no tienen formato JSON válido." });
   }
-
   if (error.type === "entity.too.large") {
     return res.status(413).json({ error: "Los datos enviados superan el tamaño permitido." });
   }
-
-  console.error(JSON.stringify({
-    requestId: req.requestId,
-    event: "request_error",
-    code: error.code || "INTERNAL_ERROR",
-    name: error.name || "Error",
-  }));
-  return res.status(error.status >= 400 && error.status < 500 ? error.status : 500).json({
-    error: error.status >= 400 && error.status < 500
-      ? "No se pudo procesar la solicitud."
-      : "Ocurrió un error inesperado en el servidor.",
+  console.error(JSON.stringify({ requestId: req.requestId, event: "request_error", code: error.code || error.name }));
+  const esErrorDelCliente = error.status >= 400 && error.status < 500;
+  return res.status(esErrorDelCliente ? error.status : 500).json({
+    error: esErrorDelCliente ? "No se pudo procesar la solicitud." : "Ocurrió un error inesperado en el servidor.",
     requestId: req.requestId,
   });
 });
 
-// Al iniciar este archivo directamente, dejamos al servidor escuchando en el puerto.
+// 6) Arranque: primero preparamos la base de datos y luego escuchamos en el puerto.
 if (require.main === module) {
   inicializarAlmacenamiento()
     .then(() => {
@@ -240,38 +143,17 @@ if (require.main === module) {
         console.log(`MicheMango está disponible en el puerto ${PUERTO} (almacenamiento: ${modoAlmacenamiento()})`);
       });
 
-      let cerrando = false;
-      const cerrarServidor = (senal) => {
-        if (cerrando) {
-          return;
-        }
-        cerrando = true;
-        console.log(`Cerrando MicheMango (${senal})...`);
-
-        servidor.close((error) => {
-          if (error) {
-            console.error("No se pudo cerrar el servidor HTTP correctamente.");
-            process.exitCode = 1;
-          }
-
-          cerrarAlmacenamiento().catch((closeError) => {
-            console.error("No se pudo cerrar el almacenamiento correctamente.", closeError.code || closeError.name);
-            process.exitCode = 1;
-          });
-        });
-      };
-
-      process.once("SIGINT", () => cerrarServidor("SIGINT"));
-      process.once("SIGTERM", () => cerrarServidor("SIGTERM"));
+      // Al apagar (Ctrl+C o Render), cerramos el servidor y la base de datos con orden.
+      const cerrar = () => servidor.close(() => cerrarAlmacenamiento().catch(() => { process.exitCode = 1; }));
+      process.once("SIGINT", cerrar);
+      process.once("SIGTERM", cerrar);
     })
     .catch((error) => {
       console.error("No se pudo iniciar MicheMango:", error.code || error.name);
-      cerrarAlmacenamiento().catch((closeError) => {
-        console.error("No se pudo cerrar el almacenamiento.", closeError.code || closeError.name);
-      });
+      cerrarAlmacenamiento().catch(() => {});
       process.exitCode = 1;
     });
 }
 
-// Exportamos la aplicación para poder probar sus rutas sin iniciar otro servidor.
+// Exportamos la app para que las pruebas puedan usarla sin abrir otro proceso.
 module.exports = app;
