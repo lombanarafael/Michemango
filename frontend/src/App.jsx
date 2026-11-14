@@ -1,20 +1,22 @@
-import AdminLogin from "./AdminLogin.jsx";
-import AdminPanel from "./AdminPanel.jsx";
-import Storefront from "./Storefront.jsx";
+import AdminLogin from "./paginas/AdminLogin.jsx";
+import AdminPanel from "./paginas/AdminPanel.jsx";
+import Tienda from "./paginas/Tienda.jsx";
 
+// "Enrutador" sencillo: según la dirección de la página mostramos una pantalla u otra.
+// /admin/login -> formulario de ingreso, /admin -> panel, cualquier otra -> tienda.
 export default function App() {
-  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const ruta = window.location.pathname.replace(/\/+$/, "") || "/";
 
-  if (/^\/admin\/login(?:\.html)?$/.test(path)) {
+  if (ruta.endsWith("/admin/login")) {
     document.title = "Ingresar | MicheMango";
     return <AdminLogin />;
   }
 
-  if (/^\/admin(?:\/panel(?:\.html)?)?$/.test(path)) {
-    document.title = "Solicitudes | MicheMango";
+  if (ruta.endsWith("/admin")) {
+    document.title = "Panel | MicheMango";
     return <AdminPanel />;
   }
 
   document.title = "MicheMango";
-  return <Storefront />;
+  return <Tienda />;
 }

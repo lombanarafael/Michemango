@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiFetchConDespertar } from "./api.js";
+import { apiFetchConDespertar } from "../api.js";
 
 export default function AdminLogin() {
   const [mensaje, setMensaje] = useState({ texto: "", error: false });

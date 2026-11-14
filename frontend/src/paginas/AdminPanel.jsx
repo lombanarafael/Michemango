@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiFetch, formatCOP } from "./api.js";
+import { apiFetch, formatCOP } from "../api.js";
 
 const TOKEN_KEY = "michemango.adminToken";
 
