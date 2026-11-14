@@ -12,7 +12,7 @@ Proyecto final de la ruta básica del curso *Mi emprendimiento digital* (Jóvene
 ## Qué hace
 
 - **Inicio** con la marca, el mensaje, las secciones y un menú de navegación.
-- **Catálogo** con ilustraciones, categoría, descripción, precio, filtros y cantidad.
+- **Catálogo** con fotos, categoría, descripción, precio, filtros y cantidad.
 - **Pedido**: arma un resumen con el total y lo abre como mensaje de WhatsApp.
 - **Contacto**: el formulario guarda cada mensaje en la base de datos.
 - **Panel admin** con login (bcrypt + JWT): crear, editar y borrar productos, y gestionar solicitudes.
@@ -37,7 +37,7 @@ frontend/                  Página web (React)
     paginas/               Tienda, AdminLogin y AdminPanel
     componentes/           Encabezado, Inicio, Catálogo, Pedido, Contacto, Recomendador...
     componentes/admin/     Formulario y tablas del panel
-    assets/productos/      Ilustraciones SVG de cada producto
+    assets/productos/      Fotos de cada producto (JPG)
     recomendador.js        Reglas del recomendador (las usa también el backend)
     api.js                 Llamadas al backend y manejo de Render dormido
     rutas.js               Enlaces que funcionan en Netlify y en GitHub Pages
@@ -121,4 +121,5 @@ Están explicadas en [`.env.example`](./.env.example). **Nunca subas el archivo 
 
 ## Imágenes
 
-Las ilustraciones de `frontend/src/assets/productos/` son dibujos vectoriales (SVG) originales hechos para este proyecto. Para usar fotos reales, reemplaza esos archivos manteniendo el mismo nombre.
+Las fotos de `frontend/src/assets/productos/` son recortes de nuestro afiche promocional, en formato JPG de 800 × 600 px.
+Para cambiar una foto, reemplaza el archivo manteniendo el mismo nombre (`micheman.jpg`, `premium.jpg`, `explosivo.jpg` o `mini.jpg`).

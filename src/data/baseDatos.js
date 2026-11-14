@@ -84,7 +84,7 @@ const TABLAS = `
   );
 `;
 
-// Los cuatro productos iniciales tenían un emoji como imagen; ahora usan una ilustración.
+// Los cuatro productos iniciales tenían un emoji como imagen; ahora usan una foto.
 // Solo cambiamos los que todavía tienen el emoji original (si el admin lo editó, se respeta).
 const IMAGENES_NUEVAS = [
   ["1", "🥭", "micheman"],

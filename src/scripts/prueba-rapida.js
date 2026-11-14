@@ -228,15 +228,15 @@ async function main() {
   const catalogo = await response.json();
   assert.equal(catalogo.length, 4);
   assert.deepEqual(catalogo.map((producto) => producto.imagen).sort(), ["explosivo", "micheman", "mini", "premium"]);
-  console.log("OK  crear, editar y eliminar productos; catálogo con ilustraciones");
+  console.log("OK  crear, editar y eliminar productos; catálogo con fotos");
 
-  // Una base antigua con emojis pasa a las ilustraciones al arrancar.
+  // Una base antigua con emojis pasa a las fotos al arrancar.
   await baseDatos.consulta("UPDATE michemango_products SET imagen = $1 WHERE id = $2", ["🥭", "1"]);
   await baseDatos.consulta("UPDATE michemango_products SET imagen = $1 WHERE id = $2", ["🍓", "4"]);
   await baseDatos.inicializarAlmacenamiento();
   const { rows } = await baseDatos.consulta("SELECT id, imagen FROM michemango_products WHERE id IN ('1', '4') ORDER BY id");
   assert.deepEqual(rows.map((fila) => fila.imagen), ["micheman", "🍓"], "solo cambia el emoji original");
-  console.log("OK  los emojis antiguos cambian por ilustraciones sin pisar cambios del admin");
+  console.log("OK  los emojis antiguos cambian por fotos sin pisar cambios del admin");
 
   const neonUrl = "postgresql://ep-example.neon.tech/database?sslmode=require&channel_binding=require";
   const normalizedUrl = baseDatos.normalizarDatabaseUrl(neonUrl);

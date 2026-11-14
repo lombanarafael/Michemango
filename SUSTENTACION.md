@@ -17,7 +17,7 @@ Guía de estudio para explicar el proyecto con mis propias palabras.
 | Punto del curso | Cómo lo cumple | Dónde está |
 |---|---|---|
 | 01 Landing / inicio | Marca, mensaje, secciones y menú | `frontend/src/componentes/Inicio.jsx`, `Encabezado.jsx`, `Nosotros.jsx` |
-| 02 Catálogo | Ilustración, categoría, descripción, precio, filtros y cantidad | `Catalogo.jsx`, `TarjetaProducto.jsx` |
+| 02 Catálogo | Foto, categoría, descripción, precio, filtros y cantidad | `Catalogo.jsx`, `TarjetaProducto.jsx` |
 | 03 Contacto real | El formulario guarda en la base de datos | `Contacto.jsx` → `POST /api/contacto` → tabla `michemango_requests` |
 | 04 Panel admin | Login con contraseña cifrada + gestión de productos y solicitudes | `paginas/AdminLogin.jsx`, `paginas/AdminPanel.jsx` |
 | 05 IA aplicada | Recomendador por reglas que sugiere un producto y explica por qué | `frontend/src/recomendador.js`, `Recomendador.jsx` |
@@ -64,7 +64,7 @@ Guía de estudio para explicar el proyecto con mis propias palabras.
 | `src/App.jsx` | Según la dirección, muestra la tienda, el login o el panel |
 | `src/paginas/Tienda.jsx` | Página principal; guarda los productos, el pedido y si el recomendador está abierto |
 | `src/componentes/*.jsx` | Una sección por archivo: Encabezado, Inicio, Nosotros, Catálogo, Pedido, Contacto, Recomendador... |
-| `src/componentes/ImagenProducto.jsx` | Convierte la clave guardada (por ejemplo `premium`) en la ilustración |
+| `src/componentes/ImagenProducto.jsx` | Convierte la clave guardada (por ejemplo `premium`) en la foto |
 | `src/paginas/AdminLogin.jsx` | Formulario de ingreso del admin |
 | `src/paginas/AdminPanel.jsx` | Panel: carga, crea, edita y borra datos usando el token |
 | `src/recomendador.js` | Las reglas del recomendador |
@@ -170,7 +170,7 @@ Así funciona (`frontend/src/recomendador.js`):
 - **Git** guarda el historial de cambios del código. Cada **commit** es una "foto" del proyecto con un mensaje que dice qué cambió. **GitHub** guarda ese historial en internet.
 - El proyecto tiene **más de 50 commits**. Los primeros armaron la página en HTML/CSS/JS; luego vinieron el backend, la base de datos, el login, el paso a React, y al final la organización para la sustentación:
   - dividir en componentes;
-  - ilustraciones de los productos;
+  - fotos de los productos;
   - GitHub Pages;
   - simplificar la base de datos;
   - nombres en español;
@@ -186,7 +186,7 @@ Así funciona (`frontend/src/recomendador.js`):
 ## 10. Preguntas probables del jurado
 
 1. **¿Lo hizo la IA?**
-   Usamos un asistente de IA (Claude) como apoyo, como permite el curso: para ordenar el código, encontrar errores y dibujar las ilustraciones en SVG. Las decisiones, el contenido del negocio y las pruebas las hicimos nosotros, y podemos explicar cada parte. Por eso dividimos el código en archivos pequeños y con comentarios.
+   Usamos un asistente de IA (Claude) como apoyo, como permite el curso: para ordenar el código, encontrar errores y preparar las fotos de los productos a partir de nuestro afiche. Las decisiones, el contenido del negocio y las pruebas las hicimos nosotros, y podemos explicar cada parte. Por eso dividimos el código en archivos pequeños y con comentarios.
 2. **¿Por qué React?**
    Porque es lo que vimos en el bloque de octubre. Nos deja dividir la página en **componentes** reutilizables, por ejemplo `TarjetaProducto` se usa una vez por producto. Con `useState`, la pantalla se actualiza sola cuando cambian los datos, como el total del pedido.
 3. **¿Qué es un componente, una prop y `useState`?**
@@ -219,7 +219,7 @@ Así funciona (`frontend/src/recomendador.js`):
 14. **¿Qué es CORS y por qué lo necesitas?**
     La página (Netlify) y la API (Render) están en dominios distintos. CORS es el permiso que da el servidor para que el navegador deje hacer esas llamadas, y solo se lo damos a nuestros sitios.
 15. **¿Qué harías para mejorarlo?**
-    - Fotos reales de los productos.
+    - Más fotos de cada producto (varias por producto).
     - Pagos en línea.
     - Que el admin reciba un correo cuando llega un mensaje.
     - Varios usuarios admin guardados en la base.
@@ -243,7 +243,7 @@ Así funciona (`frontend/src/recomendador.js`):
 ## 12. Guía de demo de 5 minutos
 
 1. **(30 s) Presentación**: qué es MicheMango y qué problema resuelve. Abrir https://michemango.netlify.app.
-2. **(45 s) Inicio y catálogo**: mostrar la marca, el menú, las secciones, las ilustraciones, los filtros por categoría y el subtotal según la cantidad.
+2. **(45 s) Inicio y catálogo**: mostrar la marca, el menú, las secciones, las fotos, los filtros por categoría y el subtotal según la cantidad.
 3. **(45 s) Recomendador**: "Ayúdame a elegir" → picante, grande, compartir → leer la explicación → "Agregar al pedido".
 4. **(30 s) Pedido**: mostrar el resumen y el total → "Preparar pedido en WhatsApp" (se abre el mensaje armado).
 5. **(45 s) Contacto**: enviar un mensaje real y mostrar el aviso de éxito.
