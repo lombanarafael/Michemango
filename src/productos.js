@@ -1,155 +1,73 @@
+// Operaciones de la tabla de productos (catálogo).
 const { randomUUID } = require("crypto");
-const { pool, sqlite } = require("./data/storage");
+const { consulta } = require("./data/storage");
 
 async function leerProductos() {
-  if (pool) {
-    const resultado = await pool.query(
-      `SELECT id, nombre, categoria, precio, descripcion, imagen
-       FROM michemango_products
-       ORDER BY nombre`
-    );
-    return resultado.rows.map((producto) => ({ ...producto, precio: Number(producto.precio) }));
-  }
-
-  return sqlite.prepare(
-    `SELECT id, nombre, categoria, precio, descripcion, imagen
-     FROM michemango_products
-     ORDER BY nombre`
-  ).all().map((producto) => ({ ...producto, precio: Number(producto.precio) }));
+  const { rows } = await consulta(
+    "SELECT id, nombre, categoria, precio, descripcion, imagen FROM michemango_products ORDER BY nombre",
+  );
+  return rows.map((producto) => ({ ...producto, precio: Number(producto.precio) }));
 }
 
-function normalizarProducto(producto, actual = null) {
-  const nombre = typeof producto.nombre === "string"
-    ? producto.nombre.trim()
-    : actual && actual.nombre;
-  const categoria = typeof producto.categoria === "string"
-    ? producto.categoria.trim()
-    : actual && actual.categoria;
-  const descripcion = typeof producto.descripcion === "string"
-    ? producto.descripcion.trim()
-    : actual && actual.descripcion;
-  const imagen = typeof producto.imagen === "string"
-    ? producto.imagen.trim()
-    : actual
-      ? actual.imagen
-      : "🥭";
-  const precio = producto.precio === undefined && actual
-    ? actual.precio
-    : Number(producto.precio);
+// Revisa y limpia los datos que envía el panel admin antes de guardarlos.
+// Al editar, "actual" trae el producto guardado para conservar los campos que no cambian.
+function normalizarProducto(datos, actual = {}) {
+  const texto = (campo) => (typeof datos[campo] === "string" ? datos[campo].trim() : actual[campo]);
+  const producto = {
+    nombre: texto("nombre"),
+    categoria: texto("categoria"),
+    descripcion: texto("descripcion"),
+    imagen: texto("imagen") || "micheman",
+    precio: datos.precio === undefined ? actual.precio : Number(datos.precio),
+  };
 
-  if (
-    typeof nombre !== "string" ||
-    !nombre ||
-    nombre.length > 80 ||
-    typeof categoria !== "string" ||
-    !categoria ||
-    categoria.length > 40 ||
-    typeof descripcion !== "string" ||
-    !descripcion ||
-    descripcion.length > 220 ||
-    !Number.isSafeInteger(precio) ||
-    precio < 1 ||
-    precio > 10000000 ||
-    typeof imagen !== "string" ||
-    imagen.length > 20
-  ) {
+  const valido =
+    typeof producto.nombre === "string" && producto.nombre && producto.nombre.length <= 80 &&
+    typeof producto.categoria === "string" && producto.categoria && producto.categoria.length <= 40 &&
+    typeof producto.descripcion === "string" && producto.descripcion && producto.descripcion.length <= 220 &&
+    producto.imagen.length <= 20 &&
+    Number.isSafeInteger(producto.precio) && producto.precio >= 1 && producto.precio <= 10000000;
+
+  if (!valido) {
     const error = new Error("Revisa los campos: nombre, categoría, descripción, imagen y precio entero válido son obligatorios.");
-    error.code = "INVALID_PRODUCT";
+    error.code = "INVALID_PRODUCT"; // la ruta usa este código para responder 400 en vez de 500
     throw error;
   }
-
-  return { nombre, categoria, precio, descripcion, imagen: imagen || "🥭" };
+  return producto;
 }
 
-async function crearProducto(producto) {
-  const nuevoProducto = {
-    id: randomUUID(),
-    ...normalizarProducto(producto),
-  };
-
-  if (pool) {
-    await pool.query(
-      `INSERT INTO michemango_products (id, nombre, categoria, precio, descripcion, imagen)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [
-        nuevoProducto.id,
-        nuevoProducto.nombre,
-        nuevoProducto.categoria,
-        nuevoProducto.precio,
-        nuevoProducto.descripcion,
-        nuevoProducto.imagen,
-      ]
-    );
-    return nuevoProducto;
-  }
-
-  sqlite.prepare(
+async function crearProducto(datos) {
+  const producto = { id: randomUUID(), ...normalizarProducto(datos) };
+  await consulta(
     `INSERT INTO michemango_products (id, nombre, categoria, precio, descripcion, imagen)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).run(
-    nuevoProducto.id,
-    nuevoProducto.nombre,
-    nuevoProducto.categoria,
-    nuevoProducto.precio,
-    nuevoProducto.descripcion,
-    nuevoProducto.imagen
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [producto.id, producto.nombre, producto.categoria, producto.precio, producto.descripcion, producto.imagen],
   );
-  return nuevoProducto;
+  return producto;
 }
 
-async function actualizarProducto(id, producto) {
-  const productos = await leerProductos();
-  const indice = productos.findIndex((elemento) => String(elemento.id) === String(id));
+// Devuelve null si el producto no existe.
+async function actualizarProducto(id, datos) {
+  const { rows } = await consulta(
+    "SELECT id, nombre, categoria, precio, descripcion, imagen FROM michemango_products WHERE id = $1",
+    [String(id)],
+  );
+  if (!rows[0]) return null;
 
-  if (indice === -1) {
-    return null;
-  }
-
-  const productoActualizado = {
-    id: productos[indice].id,
-    ...normalizarProducto(producto, productos[indice]),
-  };
-
-  if (pool) {
-    await pool.query(
-      `UPDATE michemango_products
-       SET nombre = $2, categoria = $3, precio = $4, descripcion = $5, imagen = $6
-       WHERE id = $1`,
-      [
-        String(id),
-        productoActualizado.nombre,
-        productoActualizado.categoria,
-        productoActualizado.precio,
-        productoActualizado.descripcion,
-        productoActualizado.imagen,
-      ]
-    );
-    return productoActualizado;
-  }
-
-  sqlite.prepare(
+  const producto = { id: rows[0].id, ...normalizarProducto(datos, { ...rows[0], precio: Number(rows[0].precio) }) };
+  await consulta(
     `UPDATE michemango_products
-     SET nombre = ?, categoria = ?, precio = ?, descripcion = ?, imagen = ?
-     WHERE id = ?`
-  ).run(
-    productoActualizado.nombre,
-    productoActualizado.categoria,
-    productoActualizado.precio,
-    productoActualizado.descripcion,
-    productoActualizado.imagen,
-    String(id)
+     SET nombre = $1, categoria = $2, precio = $3, descripcion = $4, imagen = $5
+     WHERE id = $6`,
+    [producto.nombre, producto.categoria, producto.precio, producto.descripcion, producto.imagen, producto.id],
   );
-  return productoActualizado;
+  return producto;
 }
 
+// Devuelve true si el producto existía y se borró.
 async function eliminarProducto(id) {
-  if (pool) {
-    const resultado = await pool.query("DELETE FROM michemango_products WHERE id = $1", [String(id)]);
-    return resultado.rowCount > 0;
-  }
-
-  const resultado = sqlite.prepare("DELETE FROM michemango_products WHERE id = ?").run(String(id));
-  return resultado.changes > 0;
+  const { rowCount } = await consulta("DELETE FROM michemango_products WHERE id = $1", [String(id)]);
+  return rowCount > 0;
 }
 
 module.exports = {
