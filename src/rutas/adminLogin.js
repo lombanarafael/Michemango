@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const { crearTokenAdmin, requiereAdminApi } = require("../middleware/requiereAdmin");
-const { limitarLogin } = require("../middleware/rateLimiters");
+const { limitarLogin } = require("../middleware/limitadores");
 
 const router = express.Router();
 router.use(express.json({ limit: "2kb" }));

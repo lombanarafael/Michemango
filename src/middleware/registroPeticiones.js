@@ -1,6 +1,6 @@
 const { randomUUID } = require("crypto");
 
-function requestLogger(req, res, next) {
+function registroPeticiones(req, res, next) {
   const id = randomUUID();
   const startedAt = Date.now();
   req.requestId = id;
@@ -19,4 +19,4 @@ function requestLogger(req, res, next) {
   next();
 }
 
-module.exports = requestLogger;
+module.exports = registroPeticiones;

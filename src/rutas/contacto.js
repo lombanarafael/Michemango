@@ -2,8 +2,8 @@
 const express = require("express");
 const { randomUUID } = require("crypto");
 const { guardarSolicitud } = require("../data/solicitudes");
-const { leerProductos } = require("../productos");
-const { limitarSolicitudes } = require("../middleware/rateLimiters");
+const { leerProductos } = require("../data/productos");
+const { limitarSolicitudes } = require("../middleware/limitadores");
 
 const router = express.Router();
 const TIPOS_PERMITIDOS = ["pedido", "cotizacion_evento", "duda"];

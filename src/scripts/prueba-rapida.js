@@ -29,7 +29,7 @@ process.env.SQLITE_PATH = databaseFile;
 process.env.DATABASE_URL = "";
 
 let server;
-let storage;
+let baseDatos;
 
 function clearProjectModules() {
   for (const file of Object.keys(require.cache)) {
@@ -40,8 +40,8 @@ function clearProjectModules() {
 }
 
 async function startApp(initialize = true) {
-  storage = require("../data/storage");
-  if (initialize) await storage.inicializarAlmacenamiento();
+  baseDatos = require("../data/baseDatos");
+  if (initialize) await baseDatos.inicializarAlmacenamiento();
 
   const app = require("../server");
   server = await new Promise((resolve, reject) => {
@@ -58,9 +58,9 @@ async function closeApp() {
     });
     server = null;
   }
-  if (storage) {
-    await storage.cerrarAlmacenamiento();
-    storage = null;
+  if (baseDatos) {
+    await baseDatos.cerrarAlmacenamiento();
+    baseDatos = null;
   }
 }
 
@@ -175,17 +175,17 @@ async function main() {
   console.log("PASS invalid JWT cannot access the admin panel");
 
   const neonUrl = "postgresql://ep-example.neon.tech/database?sslmode=require&channel_binding=require";
-  const normalizedUrl = storage.normalizarDatabaseUrl(neonUrl);
+  const normalizedUrl = baseDatos.normalizarDatabaseUrl(neonUrl);
   assert.equal(normalizedUrl.includes("channel_binding"), false);
   assert.equal(normalizedUrl.includes("sslmode"), false);
   await closeApp();
   clearProjectModules();
 
   process.env.DATABASE_URL = "postgresql://127.0.0.1:1/test?sslmode=require&channel_binding=require";
-  storage = require("../data/storage");
-  assert.equal(storage.pool.options.ssl.rejectUnauthorized, true);
-  assert.equal(storage.pool.options.connectionString.includes("channel_binding"), false);
-  assert.equal(storage.pool.options.connectionString.includes("sslmode"), false);
+  baseDatos = require("../data/baseDatos");
+  assert.equal(baseDatos.pool.options.ssl.rejectUnauthorized, true);
+  assert.equal(baseDatos.pool.options.connectionString.includes("channel_binding"), false);
+  assert.equal(baseDatos.pool.options.connectionString.includes("sslmode"), false);
   const app = require("../server");
   server = await new Promise((resolve, reject) => {
     const instance = app.listen(0, "127.0.0.1", () => resolve(instance));

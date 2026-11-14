@@ -5,13 +5,13 @@ require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const helmet = require("helmet");
-const { leerProductos } = require("./productos");
-const { consulta, inicializarAlmacenamiento, cerrarAlmacenamiento, modoAlmacenamiento } = require("./data/storage");
-const requestLogger = require("./middleware/requestLogger");
-const contactoRouter = require("./routes/contacto");
-const recomendadorRouter = require("./routes/recomendador");
-const adminAuthRouter = require("./routes/adminAuth");
-const adminApiRouter = require("./routes/adminApi");
+const { leerProductos } = require("./data/productos");
+const { consulta, inicializarAlmacenamiento, cerrarAlmacenamiento, modoAlmacenamiento } = require("./data/baseDatos");
+const registroPeticiones = require("./middleware/registroPeticiones");
+const contactoRouter = require("./rutas/contacto");
+const recomendadorRouter = require("./rutas/recomendador");
+const adminLoginRouter = require("./rutas/adminLogin");
+const adminGestionRouter = require("./rutas/adminGestion");
 
 const app = express();
 const PUERTO = process.env.PORT || 3000;
@@ -48,7 +48,7 @@ if (process.env.NODE_ENV === "production") {
 }
 
 // 3) Middlewares: se ejecutan en orden para cada petición.
-app.use(requestLogger); // registra método, ruta, estado y duración
+app.use(registroPeticiones); // registra método, ruta, estado y duración
 app.use(helmet({ // cabeceras de seguridad HTTP
   contentSecurityPolicy: {
     directives: {
@@ -79,8 +79,8 @@ app.use(express.json({ limit: "10kb" })); // leemos JSON pequeños (formularios)
 // 4) Rutas de la API.
 app.use("/api", contactoRouter);
 app.use("/api", recomendadorRouter);
-app.use("/api/admin", adminAuthRouter);
-app.use("/api/admin", adminApiRouter);
+app.use("/api/admin", adminLoginRouter);
+app.use("/api/admin", adminGestionRouter);
 
 // Prueba de salud: el frontend la usa para saber si Render ya despertó.
 app.get("/api/health", async (req, res) => {

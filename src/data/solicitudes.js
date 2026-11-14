@@ -1,5 +1,5 @@
 // Operaciones de la tabla de solicitudes (mensajes del formulario de contacto).
-const { consulta } = require("./storage");
+const { consulta } = require("./baseDatos");
 
 const COLUMNAS = `id, fecha, nombre, correo, telefono, tipo, mensaje, estado,
   producto_interes AS "productoInteres"`;

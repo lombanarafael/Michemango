@@ -1,6 +1,6 @@
 const express = require("express");
-const { leerProductos } = require("../productos");
-const { limitarRecomendaciones } = require("../middleware/rateLimiters");
+const { leerProductos } = require("../data/productos");
+const { limitarRecomendaciones } = require("../middleware/limitadores");
 
 const router = express.Router();
 const SABORES = ["dulce", "picante", "acido", "refrescante", "cualquiera"];

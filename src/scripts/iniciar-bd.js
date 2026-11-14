@@ -4,7 +4,7 @@ const {
   inicializarAlmacenamiento,
   cerrarAlmacenamiento,
   modoAlmacenamiento,
-} = require("../data/storage");
+} = require("../data/baseDatos");
 
 inicializarAlmacenamiento()
   .then(() => {

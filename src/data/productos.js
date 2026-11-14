@@ -1,6 +1,6 @@
 // Operaciones de la tabla de productos (catálogo).
 const { randomUUID } = require("crypto");
-const { consulta } = require("./data/storage");
+const { consulta } = require("./baseDatos");
 
 async function leerProductos() {
   const { rows } = await consulta(

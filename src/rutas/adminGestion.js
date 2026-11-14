@@ -11,7 +11,7 @@ const {
   crearProducto,
   actualizarProducto,
   eliminarProducto,
-} = require("../productos");
+} = require("../data/productos");
 
 const router = express.Router();
 const ESTADOS_PERMITIDOS = ["nueva", "confirmada", "atendida"];
