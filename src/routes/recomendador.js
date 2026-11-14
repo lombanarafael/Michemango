@@ -22,10 +22,10 @@ function elegirPorReglas(productos, preferencias) {
     if (preferencias.tamano === "pequeno") puntos += esPequeno ? 4 : -1;
     if (preferencias.tamano === "mediano") puntos += esPequeno ? -2 : esGrande ? 1 : 3;
     if (preferencias.tamano === "grande") puntos += esGrande ? 4 : -1;
-    if (preferencias.ocasión === "celebracion") puntos += esGrande ? 3 : 0;
-    if (preferencias.ocasión === "compartir") puntos += esGrande ? 2 : 0;
-    if (preferencias.ocasión === "regalo") puntos += esGrande ? 3 : 0;
-    if (preferencias.ocasión === "antojo") puntos += esPequeno || /cl[aá]sico/.test(texto) ? 2 : 0;
+    if (preferencias.ocasion === "celebracion") puntos += esGrande ? 3 : 0;
+    if (preferencias.ocasion === "compartir") puntos += esGrande ? 2 : 0;
+    if (preferencias.ocasion === "regalo") puntos += esGrande ? 3 : 0;
+    if (preferencias.ocasion === "antojo") puntos += esPequeno || /cl[aá]sico/.test(texto) ? 2 : 0;
 
     return { producto, puntos };
   });
@@ -52,7 +52,7 @@ router.post("/recomendaciones", limitarRecomendaciones, async (req, res) => {
       return res.status(503).json({ error: "El catálogo está vacío; no hay productos para recomendar." });
     }
 
-    const sugerencia = elegirPorReglas(productos, { sabor, tamano, ocasión: ocasion });
+    const sugerencia = elegirPorReglas(productos, { sabor, tamano, ocasion });
     const seleccion = {
       producto: sugerencia.producto,
       motivo: "Elegido según tus preferencias y los datos disponibles del catálogo.",
