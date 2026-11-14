@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiFetchConDespertar } from "../api.js";
+import { ruta } from "../rutas.js";
 
 export default function AdminLogin() {
   const [mensaje, setMensaje] = useState({ texto: "", error: false });
@@ -24,7 +25,7 @@ export default function AdminLogin() {
       const resultado = await respuesta.json();
       if (!respuesta.ok) throw new Error(resultado.error || "No fue posible iniciar sesión.");
       localStorage.setItem("michemango.adminToken", resultado.token);
-      window.location.assign("/admin");
+      window.location.assign(ruta("/admin"));
     } catch (error) {
       setMensaje({
         texto: error.message || "No pudimos iniciar sesión en este momento. Inténtalo de nuevo.",
@@ -38,7 +39,7 @@ export default function AdminLogin() {
 
   return (
     <main className="admin-login">
-      <a className="admin-back-link" href="/">← Volver a MicheMango</a>
+      <a className="admin-back-link" href={ruta("/")}>← Volver a MicheMango</a>
       <section className="admin-card" aria-labelledby="login-titulo">
         <span className="hero-badge">Administración</span>
         <h1 id="login-titulo">Ingresar al panel</h1>

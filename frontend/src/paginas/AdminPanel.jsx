@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../api.js";
+import { ruta } from "../rutas.js";
 import FormProducto from "../componentes/admin/FormProducto.jsx";
 import TablaProductos from "../componentes/admin/TablaProductos.jsx";
 import TablaSolicitudes from "../componentes/admin/TablaSolicitudes.jsx";
@@ -14,7 +15,7 @@ const PRODUCTO_VACIO = { id: "", nombre: "", categoria: "", precio: "", imagen: 
 async function solicitar(ruta, opciones = {}) {
   const token = localStorage.getItem(TOKEN_KEY);
   if (!token) {
-    window.location.assign("/admin/login");
+    window.location.assign(ruta("/admin/login"));
     throw new Error("Inicia sesión para ver el panel.");
   }
 
@@ -25,7 +26,7 @@ async function solicitar(ruta, opciones = {}) {
 
   if (respuesta.status === 401) {
     localStorage.removeItem(TOKEN_KEY);
-    window.location.assign("/admin/login");
+    window.location.assign(ruta("/admin/login"));
     throw new Error("Tu sesión venció. Inicia sesión de nuevo.");
   }
 
@@ -135,7 +136,7 @@ export default function AdminPanel() {
 
   function cerrarSesion() {
     localStorage.removeItem(TOKEN_KEY);
-    window.location.assign("/admin/login");
+    window.location.assign(ruta("/admin/login"));
   }
 
   return (
@@ -174,7 +175,7 @@ export default function AdminPanel() {
           onEliminar={eliminarSolicitud}
         />
       </section>
-      <a className="admin-back-link" href="/">Volver al sitio</a>
+      <a className="admin-back-link" href={ruta("/")}>Volver al sitio</a>
     </main>
   );
 }

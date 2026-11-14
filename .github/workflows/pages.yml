@@ -1,0 +1,41 @@
+# Publica el frontend (React) en GitHub Pages cada vez que se sube algo a main.
+# GitHub compila el proyecto con Vite y publica la carpeta dist/.
+name: Publicar en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # permite lanzarlo a mano desde la pestaña Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # En Pages el sitio vive en /<nombre-del-repo>/, por eso cambiamos la base.
+      - run: npm run build -- --base=/${{ github.event.repository.name }}/
+      # Si alguien abre /admin directamente, GitHub muestra 404.html: lo hacemos igual a index.html.
+      - run: cp dist/index.html dist/404.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: despliegue
+        uses: actions/deploy-pages@v4
