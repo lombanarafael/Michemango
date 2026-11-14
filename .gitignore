@@ -1,9 +1,14 @@
+# Dependencias (se instalan con npm install)
 node_modules/
+
+# Compilación de React (se genera con npm run build)
 /dist/
-/src/data/solicitudes.json
-/src/data/solicitudes.*.tmp
-/src/data/productos.*.tmp
-/src/data/michemango.sqlite*
+
+# Bases de datos locales SQLite
+*.sqlite
+*.sqlite-*
+
+# Variables privadas: nunca se suben a GitHub
 .env
 .env.*
 !.env.example
