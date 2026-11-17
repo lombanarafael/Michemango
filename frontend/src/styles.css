@@ -1,17 +1,4 @@
-/* =========================================================
-   MicheMango — estilos
-   Índice:
-   1. Colores y medidas      7. Catálogo
-   2. Base                   8. Pedido
-   3. Encabezado y menú ⋮    9. Contacto y formularios
-   4. Botones               10. Recomendador y botones flotantes
-   5. Portada (inicio)      11. Pie de página
-   6. Secciones y Nosotros  12. Panel administrativo
-                            13. Animaciones
-                            14. Celular (responsive)
-   ========================================================= */
 
-/* 1. Colores y medidas: inspirados en el afiche (mango, chamoy, hoja, madera) */
 :root {
     --mango: #ff8a00;
     --mango-claro: #ffb347;

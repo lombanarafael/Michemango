@@ -1,8 +1,4 @@
-// Recomendador de MicheMango: un sistema por reglas (no es un modelo generativo).
-// A cada producto le damos puntos según el sabor, el tamaño y la ocasión que eligió la persona,
-// y recomendamos el que más puntos sume. Si hay empate, gana el más económico.
-// Además guardamos las "razones" para explicarle a la persona por qué se lo recomendamos.
-// Este mismo archivo lo usan la página (React) y el backend (src/rutas/recomendador.js).
+
 
 export function recomendarProducto(productos, preferencias) {
   const puntuados = productos.map((producto) => {
