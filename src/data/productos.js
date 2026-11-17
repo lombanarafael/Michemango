@@ -1,4 +1,4 @@
-// Operaciones de la tabla de productos (catálogo).
+
 const { randomUUID } = require("crypto");
 const { consulta } = require("./baseDatos");
 
@@ -9,8 +9,7 @@ async function leerProductos() {
   return rows.map((producto) => ({ ...producto, precio: Number(producto.precio) }));
 }
 
-// Revisa y limpia los datos que envía el panel admin antes de guardarlos.
-// Al editar, "actual" trae el producto guardado para conservar los campos que no cambian.
+
 function normalizarProducto(datos, actual = {}) {
   const texto = (campo) => (typeof datos[campo] === "string" ? datos[campo].trim() : actual[campo]);
   const producto = {
@@ -46,7 +45,7 @@ async function crearProducto(datos) {
   return producto;
 }
 
-// Devuelve null si el producto no existe.
+
 async function actualizarProducto(id, datos) {
   const { rows } = await consulta(
     "SELECT id, nombre, categoria, precio, descripcion, imagen FROM michemango_products WHERE id = $1",
@@ -64,7 +63,7 @@ async function actualizarProducto(id, datos) {
   return producto;
 }
 
-// Devuelve true si el producto existía y se borró.
+
 async function eliminarProducto(id) {
   const { rowCount } = await consulta("DELETE FROM michemango_products WHERE id = $1", [String(id)]);
   return rowCount > 0;

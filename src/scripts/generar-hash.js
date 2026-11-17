@@ -1,6 +1,4 @@
-// Genera el hash bcrypt de la contraseña del administrador ("npm run admin:hash").
-// La contraseña se escribe oculta (sin mostrarse en pantalla) y solo se imprime el hash,
-// que es lo que se pega en ADMIN_PASSWORD_HASH (en .env o en Render).
+
 const bcrypt = require("bcryptjs");
 
 function leerContrasena(leyenda) {

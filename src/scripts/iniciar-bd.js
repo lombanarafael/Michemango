@@ -1,4 +1,4 @@
-// Crea las tablas y carga los productos iniciales sin arrancar el servidor ("npm run db:init").
+
 require("dotenv").config();
 
 const {

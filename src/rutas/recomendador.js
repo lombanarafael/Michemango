@@ -1,8 +1,5 @@
-// API del recomendador (POST /api/recomendaciones).
-// No repetimos la regla: usamos el mismo archivo que la página, frontend/src/recomendador.js.
-// La página calcula en el navegador para responder al instante aunque Render esté dormido;
-// esta ruta sirve para otros clientes y para probar las reglas desde el servidor.
-const express = require("express");
+
+
 const { leerProductos } = require("../data/productos");
 const { limitarRecomendaciones } = require("../middleware/limitadores");
 const { recomendarProducto, explicarRazones } = require("../../frontend/src/recomendador.js");

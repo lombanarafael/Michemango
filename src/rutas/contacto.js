@@ -1,4 +1,4 @@
-// Estas rutas reciben y validan las solicitudes enviadas desde el formulario.
+
 const express = require("express");
 const { randomUUID } = require("crypto");
 const { guardarSolicitud } = require("../data/solicitudes");
@@ -12,14 +12,14 @@ const MAXIMO_CORREO = 120;
 const MAXIMO_TELEFONO = 25;
 const MAXIMO_MENSAJE = 1000;
 
-// Quita caracteres invisibles y espacios repetidos de lo que escribió la persona.
+
 function limpiarTexto(valor) {
   return typeof valor === "string"
     ? valor.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim()
     : "";
 }
 
-// Aceptamos teléfonos en formatos comunes y comprobamos su cantidad de dígitos.
+
 function esTelefonoValido(telefono) {
   if (telefono === "") {
     return true;
@@ -33,7 +33,7 @@ function esTelefonoValido(telefono) {
   return /^\+?[\d\s().-]+$/.test(telefono) && digitos.length >= 7 && digitos.length <= 15;
 }
 
-// Comprobamos la información en el servidor: las validaciones del navegador no bastan.
+
 router.post(["/contacto", "/solicitudes"], limitarSolicitudes, async (req, res) => {
   const cuerpo = req.body;
 

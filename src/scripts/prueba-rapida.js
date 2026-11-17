@@ -1,6 +1,4 @@
-// Prueba rápida del backend ("npm run test:smoke").
-// Arranca el servidor con una base SQLite temporal y comprueba salud, CORS, formulario,
-// login, panel protegido y que los datos se conservan al reiniciar. Al final borra todo.
+
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const fs = require("node:fs");

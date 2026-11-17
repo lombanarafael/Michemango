@@ -1,5 +1,4 @@
-// Revisa que todos los archivos .js del backend no tengan errores de sintaxis (node --check).
-// Lo usa "npm run check" antes de compilar el frontend.
+
 const { execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");

@@ -1,5 +1,4 @@
-// Servidor principal de MicheMango (Express).
-// Leemos la configuración privada del archivo .env (en Render se configura en el panel).
+
 require("dotenv").config();
 
 const path = require("path");
@@ -15,9 +14,9 @@ const adminGestionRouter = require("./rutas/adminGestion");
 
 const app = express();
 const PUERTO = process.env.PORT || 3000;
-const CARPETA_FRONTEND = path.join(__dirname, "..", "dist"); // React compilado con "npm run build"
+const CARPETA_FRONTEND = path.join(__dirname, "..", "dist"); 
 
-// 1) Revisamos que existan las variables obligatorias. Si falta alguna, el servidor no arranca.
+
 const ADMIN_USER = process.env.ADMIN_USER || process.env.ADMIN_USERNAME;
 if (!ADMIN_USER || !/^\$2[aby]\$\d{2}\$/.test(process.env.ADMIN_PASSWORD_HASH || "")) {
   throw new Error("Configura ADMIN_USER y ADMIN_PASSWORD_HASH (un hash bcrypt) en el entorno.");
@@ -29,7 +28,7 @@ if (process.env.NODE_ENV === "production" && !process.env.DATABASE_URL) {
   throw new Error("Configura DATABASE_URL en producción para conservar solicitudes y productos.");
 }
 
-// 2) CORS: lista de sitios web que pueden llamar a esta API desde el navegador.
+
 const ORIGENES_PERMITIDOS = new Set([
   "http://localhost:5500",
   "http://127.0.0.1:5500",
@@ -42,7 +41,7 @@ const ORIGENES_PERMITIDOS = new Set([
   ...(process.env.CORS_ORIGINS || "").split(",").map((origen) => origen.trim()),
 ].filter(Boolean));
 
-// Render pone un proxy HTTPS delante; así Express conoce la IP real (la usa el límite de peticiones).
+
 if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }

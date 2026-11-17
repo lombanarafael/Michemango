@@ -1,5 +1,4 @@
-// Inicio de sesión del administrador.
-// La contraseña nunca se guarda en texto: en el entorno solo está su hash bcrypt (ADMIN_PASSWORD_HASH).
+
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const { crearTokenAdmin, requiereAdminApi } = require("../middleware/requiereAdmin");
@@ -17,7 +16,7 @@ router.post("/login", limitarLogin, async (req, res, next) => {
   }
 
   try {
-    // bcrypt.compare calcula el hash de lo que escribió la persona y lo compara con el guardado.
+   
     const contrasenaCorrecta = await bcrypt.compare(contrasena, process.env.ADMIN_PASSWORD_HASH);
     const usuarioCorrecto = usuario === (process.env.ADMIN_USERNAME || process.env.ADMIN_USER);
 
@@ -35,7 +34,7 @@ router.post("/login", limitarLogin, async (req, res, next) => {
   });
 });
 
-// Permite al panel comprobar si el token sigue siendo válido.
+
 router.get("/session", requiereAdminApi, (req, res) => {
   res.json({ autenticado: true });
 });

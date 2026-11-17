@@ -1,5 +1,4 @@
-# Publica el frontend (React) en GitHub Pages cada vez que se sube algo a main.
-# GitHub compila el proyecto con Vite y publica la carpeta dist/.
+
 name: Publicar en GitHub Pages
 
 on:

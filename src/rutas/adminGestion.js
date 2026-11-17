@@ -1,4 +1,4 @@
-// Estas rutas permiten consultar y gestionar solicitudes y productos solo a administradores.
+
 const express = require("express");
 const { requiereAdminApi } = require("../middleware/requiereAdmin");
 const {
@@ -16,11 +16,11 @@ const {
 const router = express.Router();
 const ESTADOS_PERMITIDOS = ["nueva", "confirmada", "atendida"];
 
-// Bloqueamos todas las rutas de esta API si la sesión no está iniciada.
+
 router.use(requiereAdminApi);
 router.use(express.json({ limit: "10kb" }));
 
-// Entregamos al panel la lista de solicitudes guardadas.
+
 router.get("/solicitudes", async (req, res) => {
   const estado = typeof req.query.estado === "string" ? req.query.estado : "";
   if (estado && !ESTADOS_PERMITIDOS.includes(estado)) {
@@ -29,7 +29,7 @@ router.get("/solicitudes", async (req, res) => {
   res.json(await leerSolicitudes(estado));
 });
 
-// Permitimos cambiar únicamente a los estados definidos para esta etapa.
+
 router.patch("/solicitudes/:id/estado", async (req, res) => {
   const estado = req.body && req.body.estado;
 
@@ -46,7 +46,7 @@ router.patch("/solicitudes/:id/estado", async (req, res) => {
   return res.json({ mensaje: "Estado actualizado.", solicitud });
 });
 
-// Eliminamos una solicitud solo después de que el panel pida expresamente hacerlo.
+
 router.delete("/solicitudes/:id", async (req, res) => {
   const eliminada = await eliminarSolicitud(req.params.id);
 
@@ -57,7 +57,7 @@ router.delete("/solicitudes/:id", async (req, res) => {
   return res.json({ mensaje: "Solicitud eliminada." });
 });
 
-// CRUD de productos: leer, crear (POST), editar (PATCH) y eliminar (DELETE).
+
 router.get("/productos", async (req, res) => {
   res.json(await leerProductos());
 });

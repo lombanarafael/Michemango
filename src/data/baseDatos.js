@@ -1,6 +1,4 @@
-// Conexión a la base de datos.
-// - En producción (Render) usamos PostgreSQL en Neon, con la dirección guardada en DATABASE_URL.
-// - En el computador, si no hay DATABASE_URL, usamos un archivo SQLite local (viene incluido en Node 22).
+
 const path = require("path");
 const { DatabaseSync } = require("node:sqlite");
 const { Pool } = require("pg");
@@ -8,8 +6,6 @@ const productosIniciales = require("./productos.json");
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
-// Neon entrega la URL con "?sslmode=require&channel_binding=require". La librería pg
-// no necesita esos parámetros porque abajo activamos SSL nosotros; por eso los quitamos.
 function normalizarDatabaseUrl(databaseUrl) {
   try {
     const url = new URL(databaseUrl);
@@ -23,7 +19,7 @@ function normalizarDatabaseUrl(databaseUrl) {
   }
 }
 
-// "pool" es un grupo de conexiones a PostgreSQL que se reutilizan entre peticiones.
+
 const pool = DATABASE_URL
   ? new Pool({
       connectionString: normalizarDatabaseUrl(DATABASE_URL),
@@ -32,7 +28,7 @@ const pool = DATABASE_URL
     })
   : null;
 
-// En producción nunca usamos SQLite: en Render los archivos se borran en cada despliegue.
+
 const sqlite = !DATABASE_URL && process.env.NODE_ENV !== "production"
   ? new DatabaseSync(process.env.SQLITE_PATH ? path.resolve(process.env.SQLITE_PATH) : path.join(__dirname, "michemango.sqlite"))
   : null;
@@ -43,9 +39,7 @@ if (pool) {
   });
 }
 
-// Ejecuta una consulta SQL en la base que esté activa y devuelve { rows, rowCount }.
-// Escribimos el SQL una sola vez con $1, $2... (estilo PostgreSQL); para SQLite los cambiamos por ?1, ?2...
-// Los valores siempre van aparte en "parametros": así evitamos inyección SQL.
+
 async function consulta(sql, parametros = []) {
   if (pool) {
     const resultado = await pool.query(sql, parametros);
@@ -61,7 +55,7 @@ async function consulta(sql, parametros = []) {
   return { rows: [], rowCount: resultado.changes };
 }
 
-// Tablas del proyecto. Se crean solo si no existen, así que es seguro ejecutarlo en cada arranque.
+
 const TABLAS = `
   CREATE TABLE IF NOT EXISTS michemango_products (
     id TEXT PRIMARY KEY,
@@ -84,8 +78,7 @@ const TABLAS = `
   );
 `;
 
-// Los cuatro productos iniciales tenían un emoji como imagen; ahora usan una foto.
-// Solo cambiamos los que todavía tienen el emoji original (si el admin lo editó, se respeta).
+
 const IMAGENES_NUEVAS = [
   ["1", "🥭", "micheman"],
   ["2", "✨", "premium"],
@@ -93,7 +86,7 @@ const IMAGENES_NUEVAS = [
   ["4", "🍋", "mini"],
 ];
 
-// Se ejecuta al arrancar el servidor (y con "npm run db:init").
+
 async function inicializarAlmacenamiento() {
   if (!pool && !sqlite) {
     throw new Error("DATABASE_URL es obligatorio en producción.");
@@ -102,7 +95,7 @@ async function inicializarAlmacenamiento() {
   if (pool) await pool.query(TABLAS);
   else sqlite.exec(TABLAS);
 
-  // Si la tabla de productos está vacía (base nueva), cargamos el catálogo inicial.
+  
   const { rows } = await consulta("SELECT COUNT(*) AS total FROM michemango_products");
   if (Number(rows[0].total) === 0) {
     for (const producto of productosIniciales) {

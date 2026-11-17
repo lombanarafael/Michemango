@@ -1,10 +1,10 @@
-// Operaciones de la tabla de solicitudes (mensajes del formulario de contacto).
+
 const { consulta } = require("./baseDatos");
 
 const COLUMNAS = `id, fecha, nombre, correo, telefono, tipo, mensaje, estado,
   producto_interes AS "productoInteres"`;
 
-// Lista las solicitudes, de la más nueva a la más antigua. Si llega un estado, filtra por él.
+
 async function leerSolicitudes(estado = "") {
   const { rows } = estado
     ? await consulta(`SELECT ${COLUMNAS} FROM michemango_requests WHERE estado = $1 ORDER BY fecha DESC`, [estado])
@@ -12,8 +12,7 @@ async function leerSolicitudes(estado = "") {
   return rows;
 }
 
-// Guarda una solicitud nueva. "ON CONFLICT DO NOTHING": si llega dos veces el mismo id
-// (por ejemplo, un reintento con la misma Idempotency-Key), no se duplica.
+
 async function guardarSolicitud(solicitud) {
   await consulta(
     `INSERT INTO michemango_requests
@@ -36,7 +35,7 @@ async function guardarSolicitud(solicitud) {
   return rows[0];
 }
 
-// Cambia el estado (nueva, confirmada o atendida). Devuelve null si el id no existe.
+
 async function actualizarEstadoSolicitud(id, estado) {
   const { rows } = await consulta(
     `UPDATE michemango_requests SET estado = $1 WHERE id = $2 RETURNING ${COLUMNAS}`,
@@ -45,7 +44,7 @@ async function actualizarEstadoSolicitud(id, estado) {
   return rows[0] || null;
 }
 
-// Borra una solicitud. Devuelve true si existía.
+
 async function eliminarSolicitud(id) {
   const { rowCount } = await consulta("DELETE FROM michemango_requests WHERE id = $1", [String(id)]);
   return rowCount > 0;
