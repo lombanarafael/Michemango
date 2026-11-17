@@ -1,5 +1,6 @@
 
 
+const express = require("express");
 const { leerProductos } = require("../data/productos");
 const { limitarRecomendaciones } = require("../middleware/limitadores");
 const { recomendarProducto, explicarRazones } = require("../../frontend/src/recomendador.js");
